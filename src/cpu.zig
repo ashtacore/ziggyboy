@@ -42,6 +42,96 @@ pub const Cpu = struct {
             self.AF |= (@as(u16, value) << @ctz(mask)); // Only set the bit if needed
         }
     }
+
+    pub fn GetSixteenBitRegister(self: *Cpu, register: SixteenBitRegister) u16 {
+        return switch (register) {
+            .AF => self.AF,
+            .BC => self.BC,
+            .DE => self.DE,
+            .HL => self.HL,
+            .StackPointer => self.SP,
+            .ProgramCounter => self.SP,
+        };
+    }
+
+    pub fn SetSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
+        const pointer = switch (register) {
+            .AF => &self.AF,
+            .BC => &self.BC,
+            .DE => &self.DE,
+            .HL => &self.HL,
+            .StackPointer => &self.SP,
+            .ProgramCounter => &self.SP,
+        };
+
+        pointer.* = value;
+    }
+
+    pub fn GetEightBitRegister(self: *Cpu, register: EightBitRegister) u8 {
+        return switch (register) {
+            .A => @as(u8, self.AF >> 8),
+            .F => @as(u8, self.AF & 0x00FF),
+            .B => @as(u8, self.BC >> 8),
+            .C => @as(u8, self.BC & 0x00FF),
+            .D => @as(u8, self.DE >> 8),
+            .E => @as(u8, self.DE & 0x00FF),
+            .H => @as(u8, self.HL >> 8),
+            .L => @as(u8, self.HL & 0x00FF),
+        };
+    }
+    
+    pub fn SetEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
+        const upper = switch (register) {
+            .A, .B, .D, .H => {
+                return @as(u16, value << 8);
+            },
+            .F => {
+                return @as(u16, self.AF & 0xFF00);
+            },
+            .C => {
+                return @as(u16, self.BC & 0xFF00);
+            },
+            .E => {
+                return @as(u16, self.DE & 0xFF00);
+            },
+            .L => {
+                return @as(u16, self.HL & 0xFF00);
+            },
+        };
+        
+        const lower = switch (register) {
+            .F, .C, .E, .L => {
+                return @as(u16, value);
+            },
+            .A => {
+                return @as(u16, self.AF & 0x00FF);
+            },
+            .B => {
+                return @as(u16, self.BC & 0x00FF);
+            },
+            .D => {
+                return @as(u16, self.DE & 0x00FF);
+            },
+            .H => {
+                return @as(u16, self.HL & 0x00FF);
+            },
+        };
+        
+        switch (register) {
+            .A, .F => {
+                self.AF = upper | lower;
+            },
+            .B, .C => {
+                self.BC = upper | lower;
+            },
+            .D, .E => {
+                self.DE = upper | lower;
+            },
+            .H, .L => {
+                self.HL = upper | lower;
+            },
+        }
+    }
 };
 
 pub const EightBitRegister = enum {
