@@ -1,23 +1,19 @@
 const std = @import("std");
-const cpu = @import("ziggyboy_cpu");
+const Cpu = @import("cpu.zig").Cpu;
+const Flag = @import("cpu.zig").Flag;
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    var cpu = Cpu{};
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    const result = cpu.add(100, 50);
-    try stdout.print("100 + 50 = {0}\n", .{result});
-
-    try bw.flush(); // Don't forget to flush!
+    std.debug.print("AF: {b:16}\n", .{cpu.AF});
+    cpu.SetFlag(Flag.HalfCarry, 1);
+    std.debug.print("AF: {b:16}\n", .{cpu.AF});
+    cpu.SetFlag(Flag.Subrataction, 1);
+    std.debug.print("AF: {b:16}\n", .{cpu.AF});
+    cpu.SetFlag(Flag.Carry, 1);
+    std.debug.print("AF: {b:16}\n", .{cpu.AF});
+    cpu.SetFlag(Flag.Zero, 1);
+    std.debug.print("AF: {b:16}\n", .{cpu.AF});
 }
 
 test "simple test" {
@@ -25,10 +21,6 @@ test "simple test" {
     defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
     try list.append(42);
     try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
-test "use other module" {
-    try std.testing.expectEqual(@as(i32, 150), cpu.add(100, 50));
 }
 
 test "fuzz example" {
