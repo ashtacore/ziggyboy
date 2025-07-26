@@ -1,6 +1,7 @@
 const std = @import("std");
-const Cpu = @import("cpu.zig").Cpu;
-const Flag = @import("cpu.zig").Flag;
+const cpuLib = @import("cpu.zig");
+const Cpu = cpuLib.Cpu;
+const Flag = cpuLib.Flag;
 
 pub fn main() !void {
     var cpu = Cpu{};

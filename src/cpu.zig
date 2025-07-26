@@ -132,6 +132,10 @@ pub const Cpu = struct {
             },
         }
     }
+
+    pub fn IncrementProgramCounter(self: *Cpu, value: u3) void {
+        self.PC += value;
+    }
 };
 
 pub const EightBitRegister = enum {
@@ -159,11 +163,6 @@ pub const Flag = enum {
     Subrataction, 
     HalfCarry, 
     Carry 
-};
-
-pub const Instruction = struct {
-    mnemonic: []const u8,
-    handler: fn (*Cpu) void,
 };
 
 pub export fn add(a: i32, b: i32) i32 {
