@@ -133,8 +133,40 @@ pub const Cpu = struct {
         }
     }
 
-    pub fn IncrementProgramCounter(self: *Cpu, value: u3) void {
-        self.PC += value;
+    pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) bool {
+        const pointer = switch (register) {
+            .AF => &self.AF,
+            .BC => &self.BC,
+            .DE => &self.DE,
+            .HL => &self.HL,
+            .StackPointer => &self.SP,
+            .ProgramCounter => &self.SP,
+        };
+
+        const result = @addWithOverflow(pointer.*, value);
+
+        pointer.* = result.result;
+        return result.overflow;
+    }
+    
+    pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) bool {
+        const initiailValue = self.GetEightBitRegister(register);
+        const result = @addWithOverflow(initiailValue, value);
+
+        self.SetEightBitRegister(register, result.result);
+        return result.overflow;
+    }
+
+    pub fn PopStack(self: *Cpu) u8 {
+        self.SP + 8;
+
+        var prng = std.rand.DefaultPrng.init(blk: {
+            var seed: u64 = undefined;
+            try std.posix.getrandom(std.mem.asBytes(&seed));
+            break :blk seed;
+        });
+        const rand = prng.random();
+        return rand.int(u8);
     }
 };
 
