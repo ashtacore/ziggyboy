@@ -105,33 +105,76 @@ pub const Cpu = struct {
         }
     }
 
-    pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) bool {
-        const pointer = switch (register) {
-            .AF => &self.AF,
-            .BC => &self.BC,
-            .DE => &self.DE,
-            .HL => &self.HL,
-            .StackPointer => &self.SP,
-            .ProgramCounter => &self.PC,
-        };
+    pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
+        const initialValue = self.GetSixteenBitRegister(self, register);
+        const result = @addWithOverflow(initialValue, value);
+        self.SetSixteenBitRegister(register, result[0]);
 
-        const result = @addWithOverflow(pointer.*, value);
+        // Zero Flag
+        if (result == 0) {
+            self.SetFlag(.Zero, 1);
+        }
+        else {
+            self.SetFlag(.Zero, 0);
+        }
 
-        pointer.* = result[0];
-        return result[1] == 1;
+        self.SetFlag(.Subrataction, 0);
+
+        // Carry Flags
+        if ((result[1])) {
+            self.SetFlag(.Carry, 1);
+            self.SetFlag(.HalfCarry, 1);
+        }
+        else if (result > 0b0000_1111_1111_1111) {
+            self.SetFlag(.Carry, 0);
+            self.SetFlag(.HalfCarry, 1);
+        }
+        else {
+            self.SetFlag(.Carry, 0);
+            self.SetFlag(.HalfCarry, 0);
+        }
     }
     
-    pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) bool {
-        const initiailValue = self.GetEightBitRegister(register);
-        const result = @addWithOverflow(initiailValue, value);
-
+    pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
+        const initialValue = self.GetSixteenBitRegister(self, register);
+        const result = @addWithOverflow(initialValue, value);
         self.SetEightBitRegister(register, result[0]);
-        return result[1] == 1;
+
+        // Zero Flag
+        if (result == 0) {
+            self.SetFlag(.Zero, 1);
+        }
+        else {
+            self.SetFlag(.Zero, 0);
+        }
+
+        self.SetFlag(.Subrataction, 0);
+
+        // Carry Flags
+        if ((result[1])) {
+            self.SetFlag(.Carry, 1);
+            self.SetFlag(.HalfCarry, 1);
+        }
+        else if (result > 0b0000_1111_1111_1111) {
+            self.SetFlag(.Carry, 0);
+            self.SetFlag(.HalfCarry, 1);
+        }
+        else {
+            self.SetFlag(.Carry, 0);
+            self.SetFlag(.HalfCarry, 0);
+        }
     }
 
+    // TODO: Rquires memory for implemenation
     pub fn PopStack(self: *Cpu) u8 {
         self.SP += 8;
 
+        const rand = std.crypto.random;
+        return rand.int(u8);
+    }
+
+    // TODO: Rquires memory for implemenation
+    pub fn LoadFromRegisterPointer(_: *Cpu, _: SixteenBitRegister) u8 {
         const rand = std.crypto.random;
         return rand.int(u8);
     }
@@ -155,6 +198,11 @@ pub const SixteenBitRegister = enum {
     HL, 
     StackPointer, 
     ProgramCounter
+};
+
+pub const Register = union(enum) {
+    eightBitRegister: EightBitRegister,
+    sixteenBitRegister: SixteenBitRegister
 };
 
 pub const Flag = enum { 
