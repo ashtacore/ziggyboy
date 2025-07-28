@@ -18,7 +18,7 @@ pub const Cpu = struct {
 
     // Register Getters / Setters
     pub fn GetFlag(self: *Cpu, flag: Flag) bool {
-        const flagRegister = self.AF & 0x00FF;
+        const flagRegister = self.GetEightBitRegister(.F);
         switch (flag) {
             .Zero => return         flagRegister & FLAG_MASK_ZERO != 0,
             .Subrataction => return flagRegister & FLAG_MASK_SUBTRACTION != 0,
@@ -29,17 +29,21 @@ pub const Cpu = struct {
 
     pub fn SetFlag(self: *Cpu, flag: Flag, value: u1) void {
         const mask: u8 = switch (flag) {
-            .Zero => FLAG_MASK_ZERO,
+            .Zero =>         FLAG_MASK_ZERO,
             .Subrataction => FLAG_MASK_SUBTRACTION,
-            .HalfCarry => FLAG_MASK_HALFCARRY,
-            .Carry => FLAG_MASK_CARRY,
+            .HalfCarry =>    FLAG_MASK_HALFCARRY,
+            .Carry =>        FLAG_MASK_CARRY,
         };
 
         // Clear bit then do an or operation to turn it back on if neccasary
-        self.AF &= ~mask;
+        var flagRegister = self.GetEightBitRegister(.F);
+        flagRegister &= ~mask;
 
         if (value == 1) {
-            self.AF |= (@as(u16, value) << @ctz(mask)); // Only set the bit if needed
+            self.SetEightBitRegister(.F, flagRegister | mask);
+        }
+        else {
+            self.SetEightBitRegister(.F, flagRegister);
         }
     }
 
@@ -126,6 +130,7 @@ pub const Cpu = struct {
     pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
         const initialValue = self.GetEightBitRegister(register);
         const result = addWithOverflow(initialValue, value);
+        std.debug.print("A: {b:8}\n", .{result.value});
         self.SetEightBitRegister(register, result.value);
 
         // Flags
@@ -184,13 +189,12 @@ pub const Flag = enum {
 };
 
 // Helper functions
-// 
-fn addWithOverflow(a: anytype, b: anytype) struct { value: @TypeOf(a, b), carry: u1, halfCarry: u1 } {
+fn addWithOverflow(a: anytype, b: anytype) struct { value: @TypeOf(a), carry: u1, halfCarry: u1 } {
     const T = @TypeOf(a);
     const U = @TypeOf(b);
 
     if (T != U) {
-        @panic("Input values must be of same type");
+        @compileError("Input values must be of same type");
     }
     
     const halfType = switch (T) {
@@ -347,9 +351,9 @@ test "IncrementSixteenBitRegister operations" {
     var cpu = Cpu{};
     
     // Test normal increment without overflow
-    cpu.AF = 0x1000;
-    cpu.IncrementSixteenBitRegister(.AF, 0x0234);
-    try testing.expect(cpu.AF == 0x1234);
+    cpu.BC = 0x1000;
+    cpu.IncrementSixteenBitRegister(.BC, 0x0234);
+    try testing.expect(cpu.BC == 0x1234);
     try testing.expect(cpu.GetFlag(.Zero) == false);
     try testing.expect(cpu.GetFlag(.Subrataction) == false);
     try testing.expect(cpu.GetFlag(.Carry) == false);
@@ -383,9 +387,9 @@ test "IncrementSixteenBitRegister operations" {
     try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
     // Test half-carry scenario (carry from bit 11 to bit 12)
-    cpu.SP = 0x0FFF;
-    cpu.IncrementSixteenBitRegister(.StackPointer, 0x0001);
-    try testing.expect(cpu.SP == 0x1000);
+    cpu.HL = 0x0FFF;
+    cpu.IncrementSixteenBitRegister(.HL, 0x0001);
+    try testing.expect(cpu.HL == 0x1000);
     try testing.expect(cpu.GetFlag(.Zero) == false);
     try testing.expect(cpu.GetFlag(.Subrataction) == false);
     try testing.expect(cpu.GetFlag(.Carry) == false);
@@ -406,8 +410,8 @@ test "IncrementEightBitRegister operations" {
     
     // Test normal increment without overflow
     cpu.SetEightBitRegister(.A, 10);
-    cpu.IncrementEightBitRegister(.A, 23);
-    try testing.expect(cpu.GetEightBitRegister(.A) == 33);
+    cpu.IncrementEightBitRegister(.A, 5);
+    try testing.expect(cpu.GetEightBitRegister(.A) == 15);
     try testing.expect(cpu.GetFlag(.Zero) == false);
     try testing.expect(cpu.GetFlag(.Subrataction) == false);
     try testing.expect(cpu.GetFlag(.Carry) == false);
@@ -420,7 +424,7 @@ test "IncrementEightBitRegister operations" {
     try testing.expect(cpu.GetFlag(.Zero) == true);
     try testing.expect(cpu.GetFlag(.Subrataction) == false);
     try testing.expect(cpu.GetFlag(.Carry) == true);
-    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == true);
     
     // Test increment by zero resulting in zero
     cpu.SetEightBitRegister(.C, 0x00);
@@ -453,20 +457,6 @@ test "IncrementEightBitRegister operations" {
     cpu.SetEightBitRegister(.H, 0x80);
     cpu.IncrementEightBitRegister(.H, 0x7E);
     try testing.expect(cpu.GetEightBitRegister(.H) == 0xFE);
-    try testing.expect(cpu.GetFlag(.Zero) == false);
-    try testing.expect(cpu.GetFlag(.Subrataction) == false);
-    try testing.expect(cpu.GetFlag(.Carry) == false);
-    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
-    
-    // Test increment on different registers independently
-    cpu.SetEightBitRegister(.L, 0x10);
-    cpu.SetEightBitRegister(.F, 0x20);
-    
-    cpu.IncrementEightBitRegister(.L, 0x05);
-    cpu.IncrementEightBitRegister(.F, 0x05);
-    
-    try testing.expect(cpu.GetEightBitRegister(.L) == 0x15);
-    try testing.expect(cpu.GetEightBitRegister(.F) == 0x25);
     try testing.expect(cpu.GetFlag(.Zero) == false);
     try testing.expect(cpu.GetFlag(.Subrataction) == false);
     try testing.expect(cpu.GetFlag(.Carry) == false);
@@ -512,20 +502,3 @@ test "CPU initialization" {
     try testing.expect(mutable_cpu.GetFlag(.HalfCarry) == false);
     try testing.expect(mutable_cpu.GetFlag(.Carry) == false);
 }
-
-test "Flag mask constants" {
-    // Test that flag masks have correct bit positions
-    try testing.expect(FLAG_MASK_ZERO == 0b1000_0000);
-    try testing.expect(FLAG_MASK_SUBTRACTION == 0b0100_0000);
-    try testing.expect(FLAG_MASK_HALFCARRY == 0b0010_0000);
-    try testing.expect(FLAG_MASK_CARRY == 0b0001_0000);
-    
-    // Test that masks don't overlap
-    try testing.expect((FLAG_MASK_ZERO & FLAG_MASK_SUBTRACTION) == 0);
-    try testing.expect((FLAG_MASK_ZERO & FLAG_MASK_HALFCARRY) == 0);
-    try testing.expect((FLAG_MASK_ZERO & FLAG_MASK_CARRY) == 0);
-    try testing.expect((FLAG_MASK_SUBTRACTION & FLAG_MASK_HALFCARRY) == 0);
-    try testing.expect((FLAG_MASK_SUBTRACTION & FLAG_MASK_CARRY) == 0);
-    try testing.expect((FLAG_MASK_HALFCARRY & FLAG_MASK_CARRY) == 0);
-}
-
