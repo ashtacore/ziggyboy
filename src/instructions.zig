@@ -118,6 +118,7 @@ pub const instruction_table: [256]Instruction = blk: {
     table[0o00] = Instruction{ .mnemonic = "NOP", .cycles = 1, .length = 1, .instructionType = .Nop };
     table[0o20] = Instruction{ .mnemonic = "STOP", .cycles = 1, .length = 2, .instructionType = .Nop };
 
+    //// LOAD Instructions
     table[0o100] = Instruction{ .mnemonic = "LD B, B", .cycles = 1, .length = 1, .instructionType = .Nop };
     table[0o101] = Instruction{ .mnemonic = "LD B, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .C } };
     table[0o102] = Instruction{ .mnemonic = "LD B, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .D } };
@@ -127,6 +128,70 @@ pub const instruction_table: [256]Instruction = blk: {
     table[0o106] = Instruction{ .mnemonic = "LD B, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .sixteenBitRegister = .HL } };
     table[0o107] = Instruction{ .mnemonic = "LD B, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .A } };
 
+    table[0o110] = Instruction{ .mnemonic = "LD C, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .B } };
+    table[0o111] = Instruction{ .mnemonic = "LD C, C", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o112] = Instruction{ .mnemonic = "LD C, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .D } };
+    table[0o113] = Instruction{ .mnemonic = "LD C, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .E } };
+    table[0o114] = Instruction{ .mnemonic = "LD C, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .H } };
+    table[0o115] = Instruction{ .mnemonic = "LD C, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .L } };
+    table[0o116] = Instruction{ .mnemonic = "LD C, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o117] = Instruction{ .mnemonic = "LD C, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o120] = Instruction{ .mnemonic = "LD D, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .eightBitRegister = .B } };
+    table[0o121] = Instruction{ .mnemonic = "LD D, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .eightBitRegister = .C } };
+    table[0o122] = Instruction{ .mnemonic = "LD D, D", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o123] = Instruction{ .mnemonic = "LD D, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .eightBitRegister = .E } };
+    table[0o124] = Instruction{ .mnemonic = "LD D, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .eightBitRegister = .H } };
+    table[0o125] = Instruction{ .mnemonic = "LD D, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .eightBitRegister = .L } };
+    table[0o126] = Instruction{ .mnemonic = "LD D, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o127] = Instruction{ .mnemonic = "LD D, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .D }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o130] = Instruction{ .mnemonic = "LD E, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .eightBitRegister = .B } };
+    table[0o131] = Instruction{ .mnemonic = "LD E, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .eightBitRegister = .C } };
+    table[0o132] = Instruction{ .mnemonic = "LD E, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .eightBitRegister = .D } };
+    table[0o133] = Instruction{ .mnemonic = "LD E, E", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o134] = Instruction{ .mnemonic = "LD E, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .eightBitRegister = .H } };
+    table[0o135] = Instruction{ .mnemonic = "LD E, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .eightBitRegister = .L } };
+    table[0o136] = Instruction{ .mnemonic = "LD E, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o137] = Instruction{ .mnemonic = "LD E, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .E }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o140] = Instruction{ .mnemonic = "LD H, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .eightBitRegister = .B } };
+    table[0o141] = Instruction{ .mnemonic = "LD H, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .eightBitRegister = .C } };
+    table[0o142] = Instruction{ .mnemonic = "LD H, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .eightBitRegister = .D } };
+    table[0o143] = Instruction{ .mnemonic = "LD H, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .eightBitRegister = .E } };
+    table[0o144] = Instruction{ .mnemonic = "LD H, H", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o145] = Instruction{ .mnemonic = "LD H, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .eightBitRegister = .L } };
+    table[0o146] = Instruction{ .mnemonic = "LD H, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o147] = Instruction{ .mnemonic = "LD H, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .H }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o150] = Instruction{ .mnemonic = "LD L, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .eightBitRegister = .B } };
+    table[0o151] = Instruction{ .mnemonic = "LD L, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .eightBitRegister = .C } };
+    table[0o152] = Instruction{ .mnemonic = "LD L, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .eightBitRegister = .D } };
+    table[0o153] = Instruction{ .mnemonic = "LD L, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .eightBitRegister = .E } };
+    table[0o154] = Instruction{ .mnemonic = "LD L, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .eightBitRegister = .H } };
+    table[0o155] = Instruction{ .mnemonic = "LD L, L", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o156] = Instruction{ .mnemonic = "LD L, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o157] = Instruction{ .mnemonic = "LD L, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .L }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o160] = Instruction{ .mnemonic = "LD [HL], B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .B } };
+    table[0o161] = Instruction{ .mnemonic = "LD [HL], C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .C } };
+    table[0o162] = Instruction{ .mnemonic = "LD [HL], D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .D } };
+    table[0o163] = Instruction{ .mnemonic = "LD [HL], E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .E } };
+    table[0o164] = Instruction{ .mnemonic = "LD [HL], H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .H } };
+    table[0o165] = Instruction{ .mnemonic = "LD [HL], L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .L } };
+    table[0o166] = Instruction{ .mnemonic = "LD [HL], HL", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o167] = Instruction{ .mnemonic = "LD [HL], A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .sixteenBitRegister = .HL }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o170] = Instruction{ .mnemonic = "LD A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o171] = Instruction{ .mnemonic = "LD A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o172] = Instruction{ .mnemonic = "LD A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o173] = Instruction{ .mnemonic = "LD A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o174] = Instruction{ .mnemonic = "LD A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o175] = Instruction{ .mnemonic = "LD A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o176] = Instruction{ .mnemonic = "LD A, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o177] = Instruction{ .mnemonic = "LD A, A", .cycles = 1, .length = 1, .instructionType = .Nop };
+
+    //// ADD Instructions
     table[0o200] = Instruction{ .mnemonic = "ADD A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
     table[0o201] = Instruction{ .mnemonic = "ADD A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
     table[0o202] = Instruction{ .mnemonic = "ADD A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
