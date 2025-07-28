@@ -400,14 +400,14 @@ test "IncrementSixteenBitRegister operations" {
     try testing.expect(cpu.GetFlag(.Carry) == false);
     try testing.expect(cpu.GetFlag(.HalfCarry) == true);
     
-    // Test ProgramCounter increment
+    // Test ProgramCounter increment. Flags should not be modified from last test
     cpu.PC = 0x0100;
     cpu.IncrementSixteenBitRegister(.ProgramCounter, 0x0001);
     try testing.expect(cpu.PC == 0x0101);
     try testing.expect(cpu.GetFlag(.Zero) == false);
     try testing.expect(cpu.GetFlag(.Subrataction) == false);
     try testing.expect(cpu.GetFlag(.Carry) == false);
-    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == true);
 }
 
 test "IncrementEightBitRegister operations" {
