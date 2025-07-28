@@ -1,5 +1,4 @@
 const std = @import("std");
-const testing = std.testing;
 
 // zig fmt: off
 const FLAG_MASK_ZERO        = 0b1000_0000;
@@ -114,6 +113,11 @@ pub const Cpu = struct {
         const result = addWithOverflow(initialValue, value);
         self.SetSixteenBitRegister(register, result.value);
 
+        // Do not set flags if incrementing the PC
+        if (register == .ProgramCounter) {
+            return;
+        }
+
         // Flags
         if (result.value == 0) {
             self.SetFlag(.Zero, 1);
@@ -130,7 +134,6 @@ pub const Cpu = struct {
     pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
         const initialValue = self.GetEightBitRegister(register);
         const result = addWithOverflow(initialValue, value);
-        std.debug.print("A: {b:8}\n", .{result.value});
         self.SetEightBitRegister(register, result.value);
 
         // Flags
@@ -219,6 +222,8 @@ fn addWithOverflow(a: anytype, b: anytype) struct { value: @TypeOf(a), carry: u1
 }
 
 // Unit Tests
+const testing = std.testing;
+
 test "GetFlag and SetFlag operations" {
     var cpu = Cpu{};
     

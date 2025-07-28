@@ -120,12 +120,12 @@ pub const instruction_table: [256]Instruction = blk: {
 
     table[0o100] = Instruction{ .mnemonic = "LD B, B", .cycles = 1, .length = 1, .instructionType = .Nop };
     table[0o101] = Instruction{ .mnemonic = "LD B, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .C } };
-    table[0o101] = Instruction{ .mnemonic = "LD B, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .D } };
-    table[0o101] = Instruction{ .mnemonic = "LD B, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .E } };
-    table[0o101] = Instruction{ .mnemonic = "LD B, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .H } };
-    table[0o101] = Instruction{ .mnemonic = "LD B, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .L } };
-    table[0o101] = Instruction{ .mnemonic = "LD B, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .sixteenBitRegister = .HL } };
-    table[0o101] = Instruction{ .mnemonic = "LD B, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .A } };
+    table[0o102] = Instruction{ .mnemonic = "LD B, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .D } };
+    table[0o103] = Instruction{ .mnemonic = "LD B, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .E } };
+    table[0o104] = Instruction{ .mnemonic = "LD B, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .H } };
+    table[0o105] = Instruction{ .mnemonic = "LD B, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .L } };
+    table[0o106] = Instruction{ .mnemonic = "LD B, HL", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o107] = Instruction{ .mnemonic = "LD B, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Load, .destinationRegister = .{ .eightBitRegister = .B }, .source = .{ .eightBitRegister = .A } };
 
     table[0o200] = Instruction{ .mnemonic = "ADD A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
     table[0o201] = Instruction{ .mnemonic = "ADD A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
@@ -138,3 +138,112 @@ pub const instruction_table: [256]Instruction = blk: {
 
     break :blk table;
 };
+
+// Unit Tests
+const testing = std.testing;
+
+test "Execute NOP instruction (0o00)" {
+    var cpu = Cpu{};
+    const nop_instruction = instruction_table[0o00];
+
+    // Set initial CPU state
+    cpu.PC = 0x100;
+    const initial_pc = cpu.PC;
+
+    // Execute NOP instruction
+    nop_instruction.Execute(&cpu);
+
+    // NOP should only increment PC by the instruction length (1 byte) and cycles (1)
+    try testing.expect(cpu.PC == initial_pc + nop_instruction.cycles);
+
+    // All other registers should remain unchanged
+    try testing.expect(cpu.AF == 0);
+    try testing.expect(cpu.BC == 0);
+    try testing.expect(cpu.DE == 0);
+    try testing.expect(cpu.HL == 0);
+    try testing.expect(cpu.SP == 0);
+}
+
+test "Execute LD B, A instruction (0o107)" {
+    var cpu = Cpu{};
+    const ld_instruction = instruction_table[0o107];
+
+    // Set initial CPU state
+    cpu.SetEightBitRegister(.A, 0x42);
+    cpu.SetEightBitRegister(.B, 0x00);
+    cpu.PC = 0x100;
+    const initial_pc = cpu.PC;
+
+    // Execute LD B, A instruction
+    ld_instruction.Execute(&cpu);
+
+    // B register should now contain the value from A register
+    try testing.expect(cpu.GetEightBitRegister(.B) == 0x42);
+    try testing.expect(cpu.GetEightBitRegister(.A) == 0x42); // A should be unchanged
+
+    // PC should be incremented by cycles (1)
+    try testing.expect(cpu.PC == initial_pc + ld_instruction.cycles);
+
+    // Test with different values
+    cpu.SetEightBitRegister(.A, 0xFF);
+    cpu.SetEightBitRegister(.B, 0x00);
+    cpu.PC = 0x200;
+    const initial_pc2 = cpu.PC;
+
+    ld_instruction.Execute(&cpu);
+
+    try testing.expect(cpu.GetEightBitRegister(.B) == 0xFF);
+    try testing.expect(cpu.GetEightBitRegister(.A) == 0xFF);
+    try testing.expect(cpu.PC == initial_pc2 + ld_instruction.cycles);
+}
+
+test "Execute ADD A, C instruction (0o201)" {
+    var cpu = Cpu{};
+    const add_instruction = instruction_table[0o201];
+
+    // Test case 1: Normal addition without overflow
+    cpu.SetEightBitRegister(.A, 0x10);
+    cpu.SetEightBitRegister(.C, 0x20);
+    cpu.PC = 0x100;
+    const initial_pc = cpu.PC;
+
+    // Execute ADD A, C instruction
+    add_instruction.Execute(&cpu);
+
+    // A register should contain the sum
+    try testing.expect(cpu.GetEightBitRegister(.A) == 0x30);
+    try testing.expect(cpu.GetEightBitRegister(.C) == 0x20); // C should be unchanged
+
+    // PC should be incremented by cycles (1)
+    try testing.expect(cpu.PC == initial_pc + add_instruction.cycles);
+
+    // Test case 2: Addition with overflow
+    cpu.SetEightBitRegister(.A, 0xFF);
+    cpu.SetEightBitRegister(.C, 0x01);
+    cpu.PC = 0x200;
+    const initial_pc2 = cpu.PC;
+
+    add_instruction.Execute(&cpu);
+
+    // A register should wrap around to 0
+    try testing.expect(cpu.GetEightBitRegister(.A) == 0x00);
+    try testing.expect(cpu.GetEightBitRegister(.C) == 0x01); // C should be unchanged
+    try testing.expect(cpu.PC == initial_pc2 + add_instruction.cycles);
+
+    // Zero flag should be set due to result being 0
+    try testing.expect(cpu.GetFlag(.Zero) == true);
+    try testing.expect(cpu.GetFlag(.Carry) == true); // Carry flag should be set due to overflow
+
+    // Test case 3: Addition resulting in zero (but not overflow)
+    cpu.SetEightBitRegister(.A, 0x00);
+    cpu.SetEightBitRegister(.C, 0x00);
+    cpu.PC = 0x300;
+    const initial_pc3 = cpu.PC;
+
+    add_instruction.Execute(&cpu);
+
+    try testing.expect(cpu.GetEightBitRegister(.A) == 0x00);
+    try testing.expect(cpu.PC == initial_pc3 + add_instruction.cycles);
+    try testing.expect(cpu.GetFlag(.Zero) == true);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false); // Subtraction flag should be clear for ADD operations
+}

@@ -10,14 +10,16 @@ pub fn main() !void {
 
     cpu.SetEightBitRegister(EightBitRegister.A, 0xFB);
     cpu.SetEightBitRegister(EightBitRegister.C, 0xFB);
-    std.debug.print("AF: {b:16}\n", .{cpu.AF});
-    std.debug.print("BC: {b:16}\n", .{cpu.BC});
+    std.debug.print("A: {b:8}\n", .{cpu.GetEightBitRegister(.A)});
+    std.debug.print("C: {b:8}\n", .{cpu.GetEightBitRegister(.C)});
+    std.debug.print("F: {b:8}\n", .{cpu.GetEightBitRegister(.F)});
     std.debug.print("PC: {b:16}\n", .{cpu.PC});
 
     const instr = instrLib.instruction_table[0o201];
     instr.Execute(&cpu);
-    std.debug.print("AF: {b:16}\n", .{cpu.AF});
-    std.debug.print("BC: {b:16}\n", .{cpu.BC});
+    std.debug.print("A: {b:8}\n", .{cpu.GetEightBitRegister(.A)});
+    std.debug.print("C: {b:8}\n", .{cpu.GetEightBitRegister(.C)});
+    std.debug.print("F: {b:8}\n", .{cpu.GetEightBitRegister(.F)});
     std.debug.print("PC: {b:16}\n", .{cpu.PC});
 }
 
