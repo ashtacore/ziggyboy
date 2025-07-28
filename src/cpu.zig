@@ -106,12 +106,12 @@ pub const Cpu = struct {
     }
 
     pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
-        const initialValue = self.GetSixteenBitRegister(self, register);
+        const initialValue = self.GetSixteenBitRegister(register);
         const result = @addWithOverflow(initialValue, value);
         self.SetSixteenBitRegister(register, result[0]);
 
         // Zero Flag
-        if (result == 0) {
+        if (result[0] == 0) {
             self.SetFlag(.Zero, 1);
         }
         else {
@@ -121,11 +121,11 @@ pub const Cpu = struct {
         self.SetFlag(.Subrataction, 0);
 
         // Carry Flags
-        if ((result[1])) {
+        if (result[1] == 1) {
             self.SetFlag(.Carry, 1);
             self.SetFlag(.HalfCarry, 1);
         }
-        else if (result > 0b0000_1111_1111_1111) {
+        else if (result[0] > 0b0000_1111_1111_1111) {
             self.SetFlag(.Carry, 0);
             self.SetFlag(.HalfCarry, 1);
         }
@@ -136,12 +136,12 @@ pub const Cpu = struct {
     }
     
     pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
-        const initialValue = self.GetSixteenBitRegister(self, register);
+        const initialValue = self.GetEightBitRegister(register);
         const result = @addWithOverflow(initialValue, value);
         self.SetEightBitRegister(register, result[0]);
 
         // Zero Flag
-        if (result == 0) {
+        if (result[0] == 0) {
             self.SetFlag(.Zero, 1);
         }
         else {
@@ -151,11 +151,11 @@ pub const Cpu = struct {
         self.SetFlag(.Subrataction, 0);
 
         // Carry Flags
-        if ((result[1])) {
+        if (result[1] == 1) {
             self.SetFlag(.Carry, 1);
             self.SetFlag(.HalfCarry, 1);
         }
-        else if (result > 0b0000_1111_1111_1111) {
+        else if (result[0] > 0b0000_1111_1111_1111) {
             self.SetFlag(.Carry, 0);
             self.SetFlag(.HalfCarry, 1);
         }
@@ -198,11 +198,6 @@ pub const SixteenBitRegister = enum {
     HL, 
     StackPointer, 
     ProgramCounter
-};
-
-pub const Register = union(enum) {
-    eightBitRegister: EightBitRegister,
-    sixteenBitRegister: SixteenBitRegister
 };
 
 pub const Flag = enum { 

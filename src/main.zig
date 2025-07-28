@@ -1,20 +1,24 @@
 const std = @import("std");
 const cpuLib = @import("cpu.zig");
+const instrLib = @import("instructions.zig");
 const Cpu = cpuLib.Cpu;
+const EightBitRegister = cpuLib.EightBitRegister;
 const Flag = cpuLib.Flag;
 
 pub fn main() !void {
     var cpu = Cpu{};
 
+    cpu.SetEightBitRegister(EightBitRegister.A, 0xFB);
+    cpu.SetEightBitRegister(EightBitRegister.C, 0xFB);
     std.debug.print("AF: {b:16}\n", .{cpu.AF});
-    cpu.SetFlag(Flag.HalfCarry, 1);
+    std.debug.print("BC: {b:16}\n", .{cpu.BC});
+    std.debug.print("PC: {b:16}\n", .{cpu.PC});
+
+    const instr = instrLib.instruction_table[0o201];
+    instr.Execute(&cpu);
     std.debug.print("AF: {b:16}\n", .{cpu.AF});
-    cpu.SetFlag(Flag.Subrataction, 1);
-    std.debug.print("AF: {b:16}\n", .{cpu.AF});
-    cpu.SetFlag(Flag.Carry, 1);
-    std.debug.print("AF: {b:16}\n", .{cpu.AF});
-    cpu.SetFlag(Flag.Zero, 1);
-    std.debug.print("AF: {b:16}\n", .{cpu.AF});
+    std.debug.print("BC: {b:16}\n", .{cpu.BC});
+    std.debug.print("PC: {b:16}\n", .{cpu.PC});
 }
 
 test "simple test" {
