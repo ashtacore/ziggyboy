@@ -107,11 +107,11 @@ pub const Cpu = struct {
 
     pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
         const initialValue = self.GetSixteenBitRegister(register);
-        const result = @addWithOverflow(initialValue, value);
-        self.SetSixteenBitRegister(register, result[0]);
+        const result = addWithOverflow(initialValue, value);
+        self.SetSixteenBitRegister(register, result.value);
 
-        // Zero Flag
-        if (result[0] == 0) {
+        // Flags
+        if (result.value == 0) {
             self.SetFlag(.Zero, 1);
         }
         else {
@@ -119,29 +119,17 @@ pub const Cpu = struct {
         }
 
         self.SetFlag(.Subrataction, 0);
-
-        // Carry Flags
-        if (result[1] == 1) {
-            self.SetFlag(.Carry, 1);
-            self.SetFlag(.HalfCarry, 1);
-        }
-        else if (result[0] > 0b0000_1111_1111_1111) {
-            self.SetFlag(.Carry, 0);
-            self.SetFlag(.HalfCarry, 1);
-        }
-        else {
-            self.SetFlag(.Carry, 0);
-            self.SetFlag(.HalfCarry, 0);
-        }
+        self.SetFlag(.Carry, result.carry);
+        self.SetFlag(.HalfCarry, result.halfCarry);
     }
     
     pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
         const initialValue = self.GetEightBitRegister(register);
-        const result = @addWithOverflow(initialValue, value);
-        self.SetEightBitRegister(register, result[0]);
+        const result = addWithOverflow(initialValue, value);
+        self.SetEightBitRegister(register, result.value);
 
-        // Zero Flag
-        if (result[0] == 0) {
+        // Flags
+        if (result.value == 0) {
             self.SetFlag(.Zero, 1);
         }
         else {
@@ -149,20 +137,8 @@ pub const Cpu = struct {
         }
 
         self.SetFlag(.Subrataction, 0);
-
-        // Carry Flags
-        if (result[1] == 1) {
-            self.SetFlag(.Carry, 1);
-            self.SetFlag(.HalfCarry, 1);
-        }
-        else if (result[0] > 0b0000_1111_1111_1111) {
-            self.SetFlag(.Carry, 0);
-            self.SetFlag(.HalfCarry, 1);
-        }
-        else {
-            self.SetFlag(.Carry, 0);
-            self.SetFlag(.HalfCarry, 0);
-        }
+        self.SetFlag(.Carry, result.carry);
+        self.SetFlag(.HalfCarry, result.halfCarry);
     }
 
     // TODO: Rquires memory for implemenation
@@ -206,6 +182,37 @@ pub const Flag = enum {
     HalfCarry, 
     Carry 
 };
+
+// Helper functions
+// 
+fn addWithOverflow(a: anytype, b: anytype) struct { value: @TypeOf(a, b), carry: u1, halfCarry: u1 } {
+    const T = @TypeOf(a);
+    const U = @TypeOf(b);
+
+    if (T != U) {
+        @panic("Input values must be of same type");
+    }
+    
+    const halfType = switch (T) {
+        u4 =>  u2,
+        u8 =>  u4,
+        u16 => u8,
+        u32 => u16,
+        u64 => u32,
+        else => @compileError("Unsupported integer size"),
+    };
+
+    const fullResult = @addWithOverflow(a, b);
+    const fullSum = fullResult[0];
+    const carry = fullResult[1];
+
+    const halfA: halfType = @truncate(a);
+    const halfB: halfType = @truncate(b);
+    const halfResult = @addWithOverflow(halfA, halfB);
+    const halfCarry = halfResult[1];
+
+    return .{ .value = fullSum, .carry = carry, .halfCarry = halfCarry};
+}
 
 // Unit Tests
 test "GetFlag and SetFlag operations" {
@@ -341,83 +348,129 @@ test "IncrementSixteenBitRegister operations" {
     
     // Test normal increment without overflow
     cpu.AF = 0x1000;
-    var overflow = cpu.IncrementSixteenBitRegister(.AF, 0x0234);
+    cpu.IncrementSixteenBitRegister(.AF, 0x0234);
     try testing.expect(cpu.AF == 0x1234);
-    try testing.expect(overflow == false);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
-    // Test increment with overflow
+    // Test increment with full overflow (16-bit)
     cpu.BC = 0xFFFF;
-    overflow = cpu.IncrementSixteenBitRegister(.BC, 0x0001);
+    cpu.IncrementSixteenBitRegister(.BC, 0x0001);
     try testing.expect(cpu.BC == 0x0000);
-    try testing.expect(overflow == true);
+    try testing.expect(cpu.GetFlag(.Zero) == true);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == true);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == true);
     
-    // Test increment by zero
-    cpu.DE = 0x5678;
-    overflow = cpu.IncrementSixteenBitRegister(.DE, 0x0000);
-    try testing.expect(cpu.DE == 0x5678);
-    try testing.expect(overflow == false);
+    // Test increment by zero (should set zero flag since result is 0)
+    cpu.DE = 0x0000;
+    cpu.IncrementSixteenBitRegister(.DE, 0x0000);
+    try testing.expect(cpu.DE == 0x0000);
+    try testing.expect(cpu.GetFlag(.Zero) == true);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
-    // Test large increment
+    // Test non-zero result (should clear zero flag)
     cpu.HL = 0x1000;
-    overflow = cpu.IncrementSixteenBitRegister(.HL, 0x8000);
+    cpu.IncrementSixteenBitRegister(.HL, 0x8000);
     try testing.expect(cpu.HL == 0x9000);
-    try testing.expect(overflow == false);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
-    // Test StackPointer increment
-    cpu.SP = 0xFFF0;
-    overflow = cpu.IncrementSixteenBitRegister(.StackPointer, 0x0010);
-    try testing.expect(cpu.SP == 0x0000);
-    try testing.expect(overflow == true);
+    // Test half-carry scenario (carry from bit 11 to bit 12)
+    cpu.SP = 0x0FFF;
+    cpu.IncrementSixteenBitRegister(.StackPointer, 0x0001);
+    try testing.expect(cpu.SP == 0x1000);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == true);
     
-    // Test ProgramCounter increment - This will fail due to bug in the code
+    // Test ProgramCounter increment
     cpu.PC = 0x0100;
-    cpu.SP = 0x0000; // Ensure SP is different to detect the bug
-    overflow = cpu.IncrementSixteenBitRegister(.ProgramCounter, 0x0001);
-    try testing.expect(cpu.PC == 0x0101); // This will fail because the code modifies SP instead of PC
+    cpu.IncrementSixteenBitRegister(.ProgramCounter, 0x0001);
+    try testing.expect(cpu.PC == 0x0101);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
 }
 
 test "IncrementEightBitRegister operations" {
     var cpu = Cpu{};
     
     // Test normal increment without overflow
-    cpu.AF = 0x1000;
-    var overflow = cpu.IncrementEightBitRegister(.A, 0x23);
-    try testing.expect(cpu.GetEightBitRegister(.A) == 0x33);
-    try testing.expect(overflow == false);
+    cpu.SetEightBitRegister(.A, 10);
+    cpu.IncrementEightBitRegister(.A, 23);
+    try testing.expect(cpu.GetEightBitRegister(.A) == 33);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
     // Test increment with overflow
     cpu.SetEightBitRegister(.B, 0xFF);
-    overflow = cpu.IncrementEightBitRegister(.B, 0x01);
+    cpu.IncrementEightBitRegister(.B, 0x01);
     try testing.expect(cpu.GetEightBitRegister(.B) == 0x00);
-    try testing.expect(overflow == true);
+    try testing.expect(cpu.GetFlag(.Zero) == true);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == true);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
-    // Test increment by zero
-    cpu.SetEightBitRegister(.C, 0x56);
-    overflow = cpu.IncrementEightBitRegister(.C, 0x00);
-    try testing.expect(cpu.GetEightBitRegister(.C) == 0x56);
-    try testing.expect(overflow == false);
+    // Test increment by zero resulting in zero
+    cpu.SetEightBitRegister(.C, 0x00);
+    cpu.IncrementEightBitRegister(.C, 0x00);
+    try testing.expect(cpu.GetEightBitRegister(.C) == 0x00);
+    try testing.expect(cpu.GetFlag(.Zero) == true);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
+    
+    // Test increment by zero resulting in non-zero
+    cpu.SetEightBitRegister(.D, 0x56);
+    cpu.IncrementEightBitRegister(.D, 0x00);
+    try testing.expect(cpu.GetEightBitRegister(.D) == 0x56);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
+    
+    // Test half-carry scenario (carry from bit 3 to bit 4)
+    cpu.SetEightBitRegister(.E, 0x0F);
+    cpu.IncrementEightBitRegister(.E, 0x01);
+    try testing.expect(cpu.GetEightBitRegister(.E) == 0x10);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == true);
     
     // Test increment that doesn't overflow
-    cpu.SetEightBitRegister(.D, 0x80);
-    overflow = cpu.IncrementEightBitRegister(.D, 0x7F);
-    try testing.expect(cpu.GetEightBitRegister(.D) == 0xFF);
-    try testing.expect(overflow == false);
+    cpu.SetEightBitRegister(.H, 0x80);
+    cpu.IncrementEightBitRegister(.H, 0x7E);
+    try testing.expect(cpu.GetEightBitRegister(.H) == 0xFE);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
     
-    // Test increment on different registers
-    cpu.SetEightBitRegister(.E, 0x10);
-    cpu.SetEightBitRegister(.H, 0x20);
-    cpu.SetEightBitRegister(.L, 0x30);
-    cpu.SetEightBitRegister(.F, 0x40);
+    // Test increment on different registers independently
+    cpu.SetEightBitRegister(.L, 0x10);
+    cpu.SetEightBitRegister(.F, 0x20);
     
-    _ = cpu.IncrementEightBitRegister(.E, 0x05);
-    _ = cpu.IncrementEightBitRegister(.H, 0x05);
-    _ = cpu.IncrementEightBitRegister(.L, 0x05);
-    _ = cpu.IncrementEightBitRegister(.F, 0x05);
+    cpu.IncrementEightBitRegister(.L, 0x05);
+    cpu.IncrementEightBitRegister(.F, 0x05);
     
-    try testing.expect(cpu.GetEightBitRegister(.E) == 0x15);
-    try testing.expect(cpu.GetEightBitRegister(.H) == 0x25);
-    try testing.expect(cpu.GetEightBitRegister(.L) == 0x35);
-    try testing.expect(cpu.GetEightBitRegister(.F) == 0x45);
+    try testing.expect(cpu.GetEightBitRegister(.L) == 0x15);
+    try testing.expect(cpu.GetEightBitRegister(.F) == 0x25);
+    try testing.expect(cpu.GetFlag(.Zero) == false);
+    try testing.expect(cpu.GetFlag(.Subrataction) == false);
+    try testing.expect(cpu.GetFlag(.Carry) == false);
+    try testing.expect(cpu.GetFlag(.HalfCarry) == false);
 }
 
 test "PopStack operation" {
