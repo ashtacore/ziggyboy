@@ -26,7 +26,7 @@ pub const Instruction = struct {
                 }
 
                 switch (self.operationType.?) {
-                    .Add => self.Add(cpu),
+                    .Add, .Adc => self.Add(cpu),
                     .Load => self.Load(cpu),
                     //else => @panic("Unimplemented operation"),
                 }
@@ -44,6 +44,12 @@ pub const Instruction = struct {
             @panic("Add operations require source");
         }
 
+        const valueModifier = switch (self.operationType.?) {
+            // In an ADC operation we include the value of the carry flag in the operation
+            .Adc => @intFromBool(cpu.GetFlag(Flag.Carry)),
+            else => 0,
+        };
+
         switch (self.destinationRegister.?) {
             .eightBitRegister => |destinationRegister| {
                 const sourceValue = switch (self.source.?) {
@@ -52,7 +58,7 @@ pub const Instruction = struct {
                     .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
                 };
 
-                cpu.IncrementEightBitRegister(destinationRegister, sourceValue);
+                cpu.IncrementEightBitRegister(destinationRegister, sourceValue + valueModifier);
             },
             .sixteenBitRegister => |destinationRegister| {
                 const sourceValue = switch (self.source.?) {
@@ -61,7 +67,7 @@ pub const Instruction = struct {
                     .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
                 };
 
-                cpu.IncrementSixteenBitRegister(destinationRegister, sourceValue);
+                cpu.IncrementSixteenBitRegister(destinationRegister, sourceValue + valueModifier);
             },
         }
     }
@@ -98,7 +104,7 @@ pub const Instruction = struct {
 };
 
 const InstructionType = enum { Register, Immediate, Jump, Nop, Invalid };
-const OperationType = enum { Add, Load };
+const OperationType = enum { Add, Adc, Load };
 
 pub const Register = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister };
 pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, immediate: u8 };
@@ -200,6 +206,15 @@ pub const instruction_table: [256]Instruction = blk: {
     table[0o205] = Instruction{ .mnemonic = "ADD A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
     table[0o206] = Instruction{ .mnemonic = "ADD A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
     table[0o207] = Instruction{ .mnemonic = "ADD A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Add, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o210] = Instruction{ .mnemonic = "ADC A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o211] = Instruction{ .mnemonic = "ADC A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o212] = Instruction{ .mnemonic = "ADC A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o213] = Instruction{ .mnemonic = "ADC A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o214] = Instruction{ .mnemonic = "ADC A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o215] = Instruction{ .mnemonic = "ADC A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o216] = Instruction{ .mnemonic = "ADC A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o217] = Instruction{ .mnemonic = "ADC A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
 
     break :blk table;
 };
