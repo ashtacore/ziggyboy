@@ -74,4 +74,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+I'm trying to learn Zig and Gameboy emulation on my own, so no PRs please. But feel free to fork or to use this code to learn for yourself!
