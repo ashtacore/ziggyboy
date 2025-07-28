@@ -36,10 +36,20 @@ zig build run
 
 ## Testing
 
-Run the test suite:
+Run all tests:
 
 ```bash
-zig test src/cpu.zig
+zig build test --summary all
+```
+
+Run specific test suites:
+
+```bash
+# Run CPU tests only
+zig build test-cpu --summary all
+
+# Run instruction tests only
+zig build test-instructions --summary all
 ```
 
 ## Project Structure
@@ -47,7 +57,8 @@ zig test src/cpu.zig
 ```
 ├── src/
 │   ├── main.zig          # Main entry point
-│   └── cpu.zig           # CPU implementation
+│   ├── cpu.zig           # CPU implementation
+│   └── instructions.zig  # Instruction definitions and execution
 ├── build.zig             # Build configuration
 ├── build.zig.zon         # Package configuration
 └── LICENSE               # MIT License
