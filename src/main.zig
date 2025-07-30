@@ -21,4 +21,11 @@ pub fn main() !void {
     std.debug.print("C: {b:8}\n", .{cpu.GetEightBitRegister(.C)});
     std.debug.print("F: {b:8}\n", .{cpu.GetEightBitRegister(.F)});
     std.debug.print("PC: {b:16}\n", .{cpu.PC});
+
+    const little: u4 = 0b1000;
+    var big: u8 = 0;
+    big = little;
+    std.debug.print("test: {b:8}\n", .{big});
+    big = @as(u8, little) << 4;
+    std.debug.print("test: {b:8}\n", .{big});
 }

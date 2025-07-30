@@ -12,7 +12,7 @@ pub const Instruction = struct {
     length: u2, // Byte length of instruction
     instructionType: InstructionType,
     operationType: ?OperationType = null,
-    destinationRegister: ?Register = null,
+    destinationRegister: ?Destination = null,
     source: ?Source = null,
 
     pub fn Execute(self: *const Instruction, cpu: *Cpu) void {
@@ -179,8 +179,8 @@ pub const Instruction = struct {
     }
 };
 
-const InstructionType = enum { Register, Immediate, Jump, Nop, Invalid };
+const InstructionType = enum { Destination, Immediate, Jump, Nop, Invalid };
 const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load };
 
-pub const Register = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister };
-pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, immediate: u8 };
+pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister };
+pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediate: u8 };
