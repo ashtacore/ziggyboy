@@ -1,6 +1,6 @@
 const std = @import("std");
 const cpuLib = @import("cpu.zig");
-const instrLib = @import("instructions.zig");
+const InstructionTable = @import("instructions/instruction_table.zig").InstructionTable;
 const Cpu = cpuLib.Cpu;
 const EightBitRegister = cpuLib.EightBitRegister;
 const Flag = cpuLib.Flag;
@@ -15,7 +15,7 @@ pub fn main() !void {
     std.debug.print("F: {b:8}\n", .{cpu.GetEightBitRegister(.F)});
     std.debug.print("PC: {b:16}\n", .{cpu.PC});
 
-    const instr = instrLib.instruction_table[0o201];
+    const instr = InstructionTable[0o201];
     instr.Execute(&cpu);
     std.debug.print("A: {b:8}\n", .{cpu.GetEightBitRegister(.A)});
     std.debug.print("C: {b:8}\n", .{cpu.GetEightBitRegister(.C)});

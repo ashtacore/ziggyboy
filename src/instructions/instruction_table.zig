@@ -1,143 +1,11 @@
-const std = @import("std");
-const cpuLib = @import("cpu.zig");
-const Cpu = cpuLib.Cpu;
-const Flag = cpuLib.Flag;
-const EightBitRegister = cpuLib.EightBitRegister;
-const SixteenBitRegister = cpuLib.SixteenBitRegister;
+const instrLib = @import("instruction.zig");
+const Instruction = instrLib.Instruction;
+const InstructionType = instrLib.InstructionType;
+const OperationType = instrLib.OperationType;
+const Register = instrLib.Register;
+const Source = instrLib.Source;
 
-pub const Instruction = struct {
-    mnemonic: []const u8,
-    cycles: u3,
-    conditionalCycles: u3 = 0, // Extra cycles for successful conditional operations
-    length: u2, // Byte length of instruction
-    instructionType: InstructionType,
-    operationType: ?OperationType = null,
-    destinationRegister: ?Register = null,
-    source: ?Source = null,
-
-    pub fn Execute(self: *const Instruction, cpu: *Cpu) void {
-        switch (self.instructionType) {
-            .Nop => std.debug.print("No Op\n", .{}),
-            .Invalid => @panic("Unimplemented instruction"),
-            .Jump => {},
-            .Register, .Immediate => {
-                if (self.operationType == null) {
-                    @panic("Register and immediate instructions must include an operationType");
-                }
-
-                switch (self.operationType.?) {
-                    .Adc, .Add, .Cp, .Dec, .Inc, .Sbc, .Sub => self.Arithmetic(cpu),
-                    .Load => self.Load(cpu),
-                    //else => @panic("Unimplemented operation"),
-                }
-            },
-        }
-
-        cpu.IncrementSixteenBitRegister(.ProgramCounter, self.cycles);
-    }
-
-    fn Arithmetic(self: *const Instruction, cpu: *Cpu) void {
-        if (self.destinationRegister == null) {
-            @panic("Add operations require destination register");
-        }
-        if (self.source == null) {
-            @panic("Add operations require source");
-        }
-
-        switch (self.destinationRegister.?) {
-            .eightBitRegister => |destinationRegister| {
-                const sourceValue = switch (self.source.?) {
-                    .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
-                    .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
-                    .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
-                };
-
-                // In an ADC / SBC operation we include the value of the carry flag in the operation
-                const modifiedValue = switch (self.operationType.?) {
-                    .Adc, .Sbc => sourceValue + @intFromBool(cpu.GetFlag(Flag.Carry)),
-                    else => sourceValue,
-                };
-
-                switch (self.operationType.?) {
-                    .Adc, .Add, .Inc => cpu.IncrementEightBitRegister(destinationRegister, modifiedValue),
-                    .Sbc, .Sub, .Dec => cpu.DecrementEightBitRegister(destinationRegister, modifiedValue),
-                    // A compare function sets the flags as if it's doing a subtract operation, but doesn't actually modify the register
-                    // To keep things simple we're going to run the increment function to set the flags, then force the register back to the original value
-                    .Cp => {
-                        const originalValue = cpu.GetEightBitRegister(destinationRegister);
-                        cpu.DecrementEightBitRegister(destinationRegister, modifiedValue);
-                        cpu.SetEightBitRegister(destinationRegister, originalValue);
-                    },
-                    else => @panic("Non-arithmatic operation routed to arithmetic function"),
-                }
-            },
-            .sixteenBitRegister => |destinationRegister| {
-                const sourceValue = switch (self.source.?) {
-                    .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
-                    .sixteenBitRegister => |sourceRegister| cpu.GetSixteenBitRegister(sourceRegister),
-                    .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
-                };
-
-                // In an ADC / SBC operation we include the value of the carry flag in the operation
-                const modifiedValue = switch (self.operationType.?) {
-                    .Adc, .Sbc => sourceValue + @intFromBool(cpu.GetFlag(Flag.Carry)),
-                    else => sourceValue,
-                };
-
-                switch (self.operationType.?) {
-                    .Adc, .Add, .Inc => cpu.IncrementSixteenBitRegister(destinationRegister, modifiedValue),
-                    .Sbc, .Sub, .Dec => cpu.DecrementSixteenBitRegister(destinationRegister, modifiedValue),
-                    // A compare function sets the flags as if it's doing a subtract operation, but doesn't actually modify the register
-                    // To keep things simple we're going to run the increment function to set the flags, then force the register back to the original value
-                    .Cp => {
-                        const originalValue = cpu.GetSixteenBitRegister(destinationRegister);
-                        cpu.DecrementSixteenBitRegister(destinationRegister, modifiedValue);
-                        cpu.SetSixteenBitRegister(destinationRegister, originalValue);
-                    },
-                    else => @panic("Non-arithmatic operation routed to arithmetic function"),
-                }
-            },
-        }
-    }
-
-    fn Load(self: *const Instruction, cpu: *Cpu) void {
-        if (self.destinationRegister == null) {
-            @panic("Load operations require destination register");
-        }
-        if (self.source == null) {
-            @panic("Load operations require source");
-        }
-
-        switch (self.destinationRegister.?) {
-            .eightBitRegister => |destinationRegister| {
-                const sourceValue = switch (self.source.?) {
-                    .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
-                    .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
-                    else => @panic("Unimplemented load operation"),
-                };
-
-                cpu.SetEightBitRegister(destinationRegister, sourceValue);
-            },
-            .sixteenBitRegister => |destinationRegister| {
-                const sourceValue = switch (self.source.?) {
-                    .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
-                    .sixteenBitRegister => |sourceRegister| cpu.GetSixteenBitRegister(sourceRegister),
-                    else => @panic("Unimplemented load operation"),
-                };
-
-                cpu.SetSixteenBitRegister(destinationRegister, sourceValue);
-            },
-        }
-    }
-};
-
-const InstructionType = enum { Register, Immediate, Jump, Nop, Invalid };
-const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, Load };
-
-pub const Register = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister };
-pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, immediate: u8 };
-
-pub const instruction_table: [256]Instruction = blk: {
+pub const InstructionTable: [256]Instruction = blk: {
     var table: [256]Instruction = undefined;
 
     for (&table) |*instruc| {
@@ -244,15 +112,75 @@ pub const instruction_table: [256]Instruction = blk: {
     table[0o216] = Instruction{ .mnemonic = "ADC A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
     table[0o217] = Instruction{ .mnemonic = "ADC A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Adc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
 
+    table[0o220] = Instruction{ .mnemonic = "SUB A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o221] = Instruction{ .mnemonic = "SUB A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o222] = Instruction{ .mnemonic = "SUB A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o223] = Instruction{ .mnemonic = "SUB A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o224] = Instruction{ .mnemonic = "SUB A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o225] = Instruction{ .mnemonic = "SUB A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o226] = Instruction{ .mnemonic = "SUB A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o227] = Instruction{ .mnemonic = "SUB A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sub, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o230] = Instruction{ .mnemonic = "SBC A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o231] = Instruction{ .mnemonic = "SBC A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o232] = Instruction{ .mnemonic = "SBC A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o233] = Instruction{ .mnemonic = "SBC A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o234] = Instruction{ .mnemonic = "SBC A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o235] = Instruction{ .mnemonic = "SBC A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o236] = Instruction{ .mnemonic = "SBC A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o237] = Instruction{ .mnemonic = "SBC A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Sbc, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o240] = Instruction{ .mnemonic = "AND A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o241] = Instruction{ .mnemonic = "AND A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o242] = Instruction{ .mnemonic = "AND A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o243] = Instruction{ .mnemonic = "AND A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o244] = Instruction{ .mnemonic = "AND A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o245] = Instruction{ .mnemonic = "AND A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o246] = Instruction{ .mnemonic = "AND A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o247] = Instruction{ .mnemonic = "AND A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .And, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o250] = Instruction{ .mnemonic = "XOR A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o251] = Instruction{ .mnemonic = "XOR A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o252] = Instruction{ .mnemonic = "XOR A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o253] = Instruction{ .mnemonic = "XOR A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o254] = Instruction{ .mnemonic = "XOR A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o255] = Instruction{ .mnemonic = "XOR A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o256] = Instruction{ .mnemonic = "XOR A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o257] = Instruction{ .mnemonic = "XOR A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Xor, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o260] = Instruction{ .mnemonic = "OR A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o261] = Instruction{ .mnemonic = "OR A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o262] = Instruction{ .mnemonic = "OR A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o263] = Instruction{ .mnemonic = "OR A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o264] = Instruction{ .mnemonic = "OR A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o265] = Instruction{ .mnemonic = "OR A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o266] = Instruction{ .mnemonic = "OR A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o267] = Instruction{ .mnemonic = "OR A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Or, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
+    table[0o270] = Instruction{ .mnemonic = "CP A, B", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .B } };
+    table[0o271] = Instruction{ .mnemonic = "CP A, C", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+    table[0o272] = Instruction{ .mnemonic = "CP A, D", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .D } };
+    table[0o273] = Instruction{ .mnemonic = "CP A, E", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .E } };
+    table[0o274] = Instruction{ .mnemonic = "CP A, H", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .H } };
+    table[0o275] = Instruction{ .mnemonic = "CP A, L", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .L } };
+    table[0o276] = Instruction{ .mnemonic = "CP A, HL", .cycles = 2, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o277] = Instruction{ .mnemonic = "CP A, A", .cycles = 1, .length = 1, .instructionType = .Register, .operationType = .Cp, .destinationRegister = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
+
     break :blk table;
 };
 
 // Unit Tests
+const std = @import("std");
 const testing = std.testing;
+const cpuLib = @import("../cpu.zig");
+const Cpu = cpuLib.Cpu;
+const Flag = cpuLib.Flag;
+const EightBitRegister = cpuLib.EightBitRegister;
+const SixteenBitRegister = cpuLib.SixteenBitRegister;
 
 test "Execute NOP instruction (0o00)" {
     var cpu = Cpu{};
-    const nop_instruction = instruction_table[0o00];
+    const nop_instruction = InstructionTable[0o00];
 
     // Set initial CPU state
     cpu.PC = 0x100;
@@ -274,7 +202,7 @@ test "Execute NOP instruction (0o00)" {
 
 test "Execute LD B, A instruction (0o107)" {
     var cpu = Cpu{};
-    const ld_instruction = instruction_table[0o107];
+    const ld_instruction = InstructionTable[0o107];
 
     // Set initial CPU state
     cpu.SetEightBitRegister(.A, 0x42);
@@ -307,7 +235,7 @@ test "Execute LD B, A instruction (0o107)" {
 
 test "Execute ADD A, C instruction (0o201)" {
     var cpu = Cpu{};
-    const add_instruction = instruction_table[0o201];
+    const add_instruction = InstructionTable[0o201];
 
     // Test case 1: Normal addition without overflow
     cpu.SetEightBitRegister(.A, 0x10);

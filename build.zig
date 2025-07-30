@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) void {
 
     // Instructions-specific tests
     const instructions_tests = b.addTest(.{
-        .root_source_file = b.path("src/instructions.zig"),
+        .root_source_file = b.path("src/instructions/instruction_table.zig"),
         .target = target,
         .optimize = optimize,
     });
