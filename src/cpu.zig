@@ -119,13 +119,7 @@ pub const Cpu = struct {
         }
 
         // Flags
-        if (result.value == 0) {
-            self.SetFlag(.Zero, 1);
-        }
-        else {
-            self.SetFlag(.Zero, 0);
-        }
-
+        self.SetFlag(.Zero, @intFromBool(result.value == 0));
         self.SetFlag(.Subrataction, 0);
         self.SetFlag(.Carry, result.carry);
         self.SetFlag(.HalfCarry, result.halfCarry);
@@ -137,13 +131,7 @@ pub const Cpu = struct {
         self.SetEightBitRegister(register, result.value);
 
         // Flags
-        if (result.value == 0) {
-            self.SetFlag(.Zero, 1);
-        }
-        else {
-            self.SetFlag(.Zero, 0);
-        }
-
+        self.SetFlag(.Zero, @intFromBool(result.value == 0));
         self.SetFlag(.Subrataction, 0);
         self.SetFlag(.Carry, result.carry);
         self.SetFlag(.HalfCarry, result.halfCarry);

@@ -26,7 +26,7 @@ pub const Instruction = struct {
                 }
 
                 switch (self.operationType.?) {
-                    .Adc, .Add, .Cp, .Dec, .Inc, .Sbc, .Sub => self.Arithmetic(cpu),
+                    .Adc, .Add, .Cp, .Dec, .Inc, .Sbc, .Sub, .And, .Xor, .Or => self.Arithmetic(cpu),
                     .Load => self.Load(cpu),
                     //else => @panic("Unimplemented operation"),
                 }
@@ -68,6 +68,30 @@ pub const Instruction = struct {
                         cpu.DecrementEightBitRegister(destinationRegister, modifiedValue);
                         cpu.SetEightBitRegister(destinationRegister, originalValue);
                     },
+                    .And => {
+                        const result = sourceValue & modifiedValue;
+                        cpu.SetEightBitRegister(destinationRegister, result);
+                        cpu.SetFlag(.Zero, @intFromBool(result == 0));
+                        cpu.SetFlag(.Subrataction, 0);
+                        cpu.SetFlag(.Carry, 1);
+                        cpu.SetFlag(.HalfCarry, 0);
+                    },
+                    .Xor => {
+                        const result = sourceValue ^ modifiedValue;
+                        cpu.SetEightBitRegister(destinationRegister, result);
+                        cpu.SetFlag(.Zero, @intFromBool(result == 0));
+                        cpu.SetFlag(.Subrataction, 0);
+                        cpu.SetFlag(.Carry, 0);
+                        cpu.SetFlag(.HalfCarry, 0);
+                    },
+                    .Or => {
+                        const result = sourceValue | modifiedValue;
+                        cpu.SetEightBitRegister(destinationRegister, result);
+                        cpu.SetFlag(.Zero, @intFromBool(result == 0));
+                        cpu.SetFlag(.Subrataction, 0);
+                        cpu.SetFlag(.Carry, 0);
+                        cpu.SetFlag(.HalfCarry, 0);
+                    },
                     else => @panic("Non-arithmatic operation routed to arithmetic function"),
                 }
             },
@@ -93,6 +117,30 @@ pub const Instruction = struct {
                         const originalValue = cpu.GetSixteenBitRegister(destinationRegister);
                         cpu.DecrementSixteenBitRegister(destinationRegister, modifiedValue);
                         cpu.SetSixteenBitRegister(destinationRegister, originalValue);
+                    },
+                    .And => {
+                        const result = sourceValue & modifiedValue;
+                        cpu.SetSixteenBitRegister(destinationRegister, result);
+                        cpu.SetFlag(.Zero, @intFromBool(result == 0));
+                        cpu.SetFlag(.Subrataction, 0);
+                        cpu.SetFlag(.Carry, 1);
+                        cpu.SetFlag(.HalfCarry, 0);
+                    },
+                    .Xor => {
+                        const result = sourceValue ^ modifiedValue;
+                        cpu.SetSixteenBitRegister(destinationRegister, result);
+                        cpu.SetFlag(.Zero, @intFromBool(result == 0));
+                        cpu.SetFlag(.Subrataction, 0);
+                        cpu.SetFlag(.Carry, 0);
+                        cpu.SetFlag(.HalfCarry, 0);
+                    },
+                    .Or => {
+                        const result = sourceValue | modifiedValue;
+                        cpu.SetSixteenBitRegister(destinationRegister, result);
+                        cpu.SetFlag(.Zero, @intFromBool(result == 0));
+                        cpu.SetFlag(.Subrataction, 0);
+                        cpu.SetFlag(.Carry, 0);
+                        cpu.SetFlag(.HalfCarry, 0);
                     },
                     else => @panic("Non-arithmatic operation routed to arithmetic function"),
                 }
