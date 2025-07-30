@@ -26,7 +26,7 @@ pub const Instruction = struct {
                 }
 
                 switch (self.operationType.?) {
-                    .Add, .Adc => self.Add(cpu),
+                    .Adc, .Add, .Cp, .Dec, .Inc, .Sbc, .Sub => self.Arithmetic(cpu),
                     .Load => self.Load(cpu),
                     //else => @panic("Unimplemented operation"),
                 }
@@ -36,19 +36,13 @@ pub const Instruction = struct {
         cpu.IncrementSixteenBitRegister(.ProgramCounter, self.cycles);
     }
 
-    fn Add(self: *const Instruction, cpu: *Cpu) void {
+    fn Arithmetic(self: *const Instruction, cpu: *Cpu) void {
         if (self.destinationRegister == null) {
             @panic("Add operations require destination register");
         }
         if (self.source == null) {
             @panic("Add operations require source");
         }
-
-        const valueModifier = switch (self.operationType.?) {
-            // In an ADC operation we include the value of the carry flag in the operation
-            .Adc => @intFromBool(cpu.GetFlag(Flag.Carry)),
-            else => 0,
-        };
 
         switch (self.destinationRegister.?) {
             .eightBitRegister => |destinationRegister| {
@@ -58,7 +52,24 @@ pub const Instruction = struct {
                     .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
                 };
 
-                cpu.IncrementEightBitRegister(destinationRegister, sourceValue + valueModifier);
+                // In an ADC / SBC operation we include the value of the carry flag in the operation
+                const modifiedValue = switch (self.operationType.?) {
+                    .Adc, .Sbc => sourceValue + @intFromBool(cpu.GetFlag(Flag.Carry)),
+                    else => sourceValue,
+                };
+
+                switch (self.operationType.?) {
+                    .Adc, .Add, .Inc => cpu.IncrementEightBitRegister(destinationRegister, modifiedValue),
+                    .Sbc, .Sub, .Dec => cpu.DecrementEightBitRegister(destinationRegister, modifiedValue),
+                    // A compare function sets the flags as if it's doing a subtract operation, but doesn't actually modify the register
+                    // To keep things simple we're going to run the increment function to set the flags, then force the register back to the original value
+                    .Cp => {
+                        const originalValue = cpu.GetEightBitRegister(destinationRegister);
+                        cpu.DecrementEightBitRegister(destinationRegister, modifiedValue);
+                        cpu.SetEightBitRegister(destinationRegister, originalValue);
+                    },
+                    else => @panic("Non-arithmatic operation routed to arithmetic function"),
+                }
             },
             .sixteenBitRegister => |destinationRegister| {
                 const sourceValue = switch (self.source.?) {
@@ -67,7 +78,24 @@ pub const Instruction = struct {
                     .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
                 };
 
-                cpu.IncrementSixteenBitRegister(destinationRegister, sourceValue + valueModifier);
+                // In an ADC / SBC operation we include the value of the carry flag in the operation
+                const modifiedValue = switch (self.operationType.?) {
+                    .Adc, .Sbc => sourceValue + @intFromBool(cpu.GetFlag(Flag.Carry)),
+                    else => sourceValue,
+                };
+
+                switch (self.operationType.?) {
+                    .Adc, .Add, .Inc => cpu.IncrementSixteenBitRegister(destinationRegister, modifiedValue),
+                    .Sbc, .Sub, .Dec => cpu.DecrementSixteenBitRegister(destinationRegister, modifiedValue),
+                    // A compare function sets the flags as if it's doing a subtract operation, but doesn't actually modify the register
+                    // To keep things simple we're going to run the increment function to set the flags, then force the register back to the original value
+                    .Cp => {
+                        const originalValue = cpu.GetSixteenBitRegister(destinationRegister);
+                        cpu.DecrementSixteenBitRegister(destinationRegister, modifiedValue);
+                        cpu.SetSixteenBitRegister(destinationRegister, originalValue);
+                    },
+                    else => @panic("Non-arithmatic operation routed to arithmetic function"),
+                }
             },
         }
     }
@@ -104,7 +132,7 @@ pub const Instruction = struct {
 };
 
 const InstructionType = enum { Register, Immediate, Jump, Nop, Invalid };
-const OperationType = enum { Add, Adc, Load };
+const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, Load };
 
 pub const Register = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister };
 pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, immediate: u8 };

@@ -149,6 +149,22 @@ pub const Cpu = struct {
         self.SetFlag(.HalfCarry, result.halfCarry);
     }
 
+    pub fn DecrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
+        const modifiedInput = ~value + 1;
+
+        // Easiest way to do this without duplicating code is to use the Increment function with the negated input and override the subtraction flag
+        self.IncrementSixteenBitRegister(register, modifiedInput);
+        self.SetFlag(.Subrataction, 1);
+    }
+    
+    pub fn DecrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
+        const modifiedInput = ~value + 1;
+
+        // Easiest way to do this without duplicating code is to use the Increment function with the negated input and override the subtraction flag
+        self.IncrementEightBitRegister(register, modifiedInput);
+        self.SetFlag(.Subrataction, 1);
+    }
+
     // TODO: Rquires memory for implemenation
     pub fn PopStack(self: *Cpu) u8 {
         self.SP += 8;
