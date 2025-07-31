@@ -49,7 +49,7 @@ pub const Instruction = struct {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
-                    .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
+                    .immediateEight => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
                 };
 
                 // In an ADC / SBC operation we include the value of the carry flag in the operation
@@ -161,7 +161,7 @@ pub const Instruction = struct {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .pointerRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
-                    .immediateEight => |sourceImmediate| sourceImmediate,
+                    .immediateEight => if (self.length == 2) cpu.PopStack() else @panic("Invalid eight-bit immediate load operation"),
                     else => @panic("Invalid eight-bit load operation"),
                 };
 
@@ -171,22 +171,22 @@ pub const Instruction = struct {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .sixteenBitRegister => |sourceRegister| cpu.GetSixteenBitRegister(sourceRegister),
-                    .immediateSixteen => |sourceImmediate| sourceImmediate,
+                    .immediateSixteen => if (self.length == 3) cpu.PopStackTwice() else @panic("Invalid sixteen-bit immediate load operation"),
                     else => @panic("Invalid sixteen-bit load operation"),
                 };
 
                 cpu.SetSixteenBitRegister(destinationRegister, sourceValue);
             },
-            .pointerRegister => | destinationPointer| {
+            .pointerRegister => |destinationPointer| {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
-                    .immediateEight => |sourceImmediate| sourceImmediate,
+                    .immediateEight => if (self.length == 2) cpu.PopStack() else @panic("Invalid eight-bit immediate load operation"),
                     else => @panic("Invalid pointer load operation"),
                 };
 
-                cpu.SetToRegisterPointer(destinationPointer, sourceValue)
-            }
+                cpu.SetToRegisterPointer(destinationPointer, sourceValue);
+            },
         }
     }
 };

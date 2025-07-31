@@ -160,6 +160,14 @@ pub const Cpu = struct {
         const rand = std.crypto.random;
         return rand.int(u8);
     }
+    
+    // TODO: Rquires memory for implemenation
+    pub fn PopStackTwice(self: *Cpu) u16 {
+        self.SP += 16;
+
+        const rand = std.crypto.random;
+        return rand.int(u16);
+    }
 
     // TODO: Rquires memory for implemenation
     pub fn LoadFromRegisterPointer(_: *Cpu, _: SixteenBitRegister) u8 {
