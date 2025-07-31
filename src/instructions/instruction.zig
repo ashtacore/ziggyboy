@@ -20,7 +20,7 @@ pub const Instruction = struct {
             .Nop => std.debug.print("No Op\n", .{}),
             .Invalid => @panic("Unimplemented instruction"),
             .Jump => {},
-            .Register, .Immediate => {
+            .Data => {
                 if (self.operationType == null) {
                     @panic("Register and immediate instructions must include an operationType");
                 }
@@ -160,8 +160,9 @@ pub const Instruction = struct {
             .eightBitRegister => |destinationRegister| {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
-                    .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
-                    else => @panic("Unimplemented load operation"),
+                    .pointerRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
+                    .immediateEight => |sourceImmediate| sourceImmediate,
+                    else => @panic("Invalid eight-bit load operation"),
                 };
 
                 cpu.SetEightBitRegister(destinationRegister, sourceValue);
@@ -170,17 +171,28 @@ pub const Instruction = struct {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .sixteenBitRegister => |sourceRegister| cpu.GetSixteenBitRegister(sourceRegister),
-                    else => @panic("Unimplemented load operation"),
+                    .immediateSixteen => |sourceImmediate| sourceImmediate,
+                    else => @panic("Invalid sixteen-bit load operation"),
                 };
 
                 cpu.SetSixteenBitRegister(destinationRegister, sourceValue);
             },
+            .pointerRegister => | destinationPointer| {
+                const sourceValue = switch (self.source.?) {
+                    .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
+                    .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
+                    .immediateEight => |sourceImmediate| sourceImmediate,
+                    else => @panic("Invalid pointer load operation"),
+                };
+
+                cpu.SetToRegisterPointer(destinationPointer, sourceValue)
+            }
         }
     }
 };
 
-const InstructionType = enum { Destination, Immediate, Jump, Nop, Invalid };
+const InstructionType = enum { Data, Jump, Nop, Invalid };
 const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load };
 
 pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister };
-pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediate: u8 };
+pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediateEight: u8, immediateSixteen: u16 };

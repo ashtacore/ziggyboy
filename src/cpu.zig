@@ -166,6 +166,10 @@ pub const Cpu = struct {
         const rand = std.crypto.random;
         return rand.int(u8);
     }
+    
+    // TODO: Rquires memory for implemenation
+    pub fn SetToRegisterPointer(_: *Cpu, _: SixteenBitRegister, _: u8) void {
+    }
 };
 
 pub const EightBitRegister = enum {
