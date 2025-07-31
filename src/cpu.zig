@@ -142,6 +142,12 @@ pub const Cpu = struct {
 
         // Easiest way to do this without duplicating code is to use the Increment function with the negated input and override the subtraction flag
         self.IncrementSixteenBitRegister(register, modifiedInput);
+
+        // Do not set flags if incrementing the PC
+        if (register == .ProgramCounter) {
+            return;
+        }
+        
         self.SetFlag(.Subrataction, 1);
     }
     

@@ -48,8 +48,9 @@ pub const Instruction = struct {
             .eightBitRegister => |destinationRegister| {
                 const sourceValue = switch (self.source.?) {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
-                    .sixteenBitRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
+                    .pointerRegister => |sourceRegister| cpu.LoadFromRegisterPointer(sourceRegister),
                     .immediateEight => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
+                    else => @panic("Invalid eight-bit arithmetic operation"),
                 };
 
                 // In an ADC / SBC operation we include the value of the carry flag in the operation
@@ -97,9 +98,9 @@ pub const Instruction = struct {
             },
             .sixteenBitRegister => |destinationRegister| {
                 const sourceValue = switch (self.source.?) {
-                    .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .sixteenBitRegister => |sourceRegister| cpu.GetSixteenBitRegister(sourceRegister),
-                    .immediate => |immediateValue| if (self.length == 2) cpu.PopStack() else immediateValue,
+                    .immediateSixteen => |immediateValue| immediateValue,
+                    else => @panic("Invalid sixteen-bit arithmetic operation"),
                 };
 
                 // In an ADC / SBC operation we include the value of the carry flag in the operation
@@ -143,6 +144,15 @@ pub const Instruction = struct {
                         cpu.SetFlag(.HalfCarry, 0);
                     },
                     else => @panic("Non-arithmatic operation routed to arithmetic function"),
+                }
+            },
+            .pointerRegister => |destinationRegister| {
+                const originalValue = cpu.LoadFromRegisterPointer(destinationRegister);
+
+                switch (self.operationType.?) {
+                    .Inc => cpu.SetToRegisterPointer(destinationRegister, originalValue + 1),
+                    .Dec => cpu.SetToRegisterPointer(destinationRegister, originalValue - 1),
+                    else => @panic("Invalid pointer arithmetic operation"),
                 }
             },
         }
