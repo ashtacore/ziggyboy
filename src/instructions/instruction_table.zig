@@ -198,6 +198,15 @@ pub const InstructionTable: [256]Instruction = blk: {
     table[0o276] = Instruction{ .mnemonic = "CP A, HL", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .A }, .source = .{ .pointerRegister = .HL } };
     table[0o277] = Instruction{ .mnemonic = "CP A, A", .cycles = 1, .length = 1, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .A } };
 
+    table[0o306] = Instruction{ .mnemonic = "ADD A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Add, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o316] = Instruction{ .mnemonic = "ADC A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Adc, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o326] = Instruction{ .mnemonic = "SUB A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Sub, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o336] = Instruction{ .mnemonic = "SBC A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Sbc, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o346] = Instruction{ .mnemonic = "AND A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .And, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o356] = Instruction{ .mnemonic = "XOR A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Xor, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o366] = Instruction{ .mnemonic = "OR A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Or, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o376] = Instruction{ .mnemonic = "CP A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    
     break :blk table;
 };
 
