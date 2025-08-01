@@ -108,47 +108,44 @@ pub const Cpu = struct {
         }
     }
 
-    pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
+    // ALU Operations
+    pub fn IncrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16, updateFlags: bool) void {
         const initialValue = self.GetSixteenBitRegister(register);
         const result = addWithOverflow(initialValue, value);
         self.SetSixteenBitRegister(register, result.value);
-
-        // Do not set flags if incrementing the PC
-        if (register == .ProgramCounter) {
-            return;
+        
+        if (updateFlags) {
+            // Zero flag never set for 16-bit operations, except when modifying the Stack Pointer
+            if (register == .StackPointer) {
+                self.SetFlag(.Zero, 0);
+            }
+            
+            self.SetFlag(.Subrataction, 0);
+            self.SetFlag(.HalfCarry, result.halfCarry);
+            self.SetFlag(.Carry, result.carry);
         }
-
-        // Flags
-        self.SetFlag(.Zero, @intFromBool(result.value == 0));
-        self.SetFlag(.Subrataction, 0);
-        self.SetFlag(.Carry, result.carry);
-        self.SetFlag(.HalfCarry, result.halfCarry);
-    }
-    
-    pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
-        const initialValue = self.GetEightBitRegister(register);
-        const result = addWithOverflow(initialValue, value);
-        self.SetEightBitRegister(register, result.value);
-
-        // Flags
-        self.SetFlag(.Zero, @intFromBool(result.value == 0));
-        self.SetFlag(.Subrataction, 0);
-        self.SetFlag(.Carry, result.carry);
-        self.SetFlag(.HalfCarry, result.halfCarry);
     }
 
     pub fn DecrementSixteenBitRegister(self: *Cpu, register: SixteenBitRegister, value: u16) void {
         const modifiedInput = ~value + 1;
 
-        // Easiest way to do this without duplicating code is to use the Increment function with the negated input and override the subtraction flag
-        self.IncrementSixteenBitRegister(register, modifiedInput);
-
-        // Do not set flags if incrementing the PC
-        if (register == .ProgramCounter) {
-            return;
-        }
+        // Easiest way to do this without duplicating code is to use the Increment function with the negated input
+        // Flags are never set for 16-bit operations
+        self.IncrementSixteenBitRegister(register, modifiedInput, false);
+    }
+    
+    pub fn IncrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8, updateCarryFlags: bool) void {
+        const initialValue = self.GetEightBitRegister(register);
+        const result = addWithOverflow(initialValue, value);
+        self.SetEightBitRegister(register, result.value);
         
-        self.SetFlag(.Subrataction, 1);
+        // Flags
+        self.SetFlag(.Zero, @intFromBool(result.value == 0));
+        self.SetFlag(.Subrataction, 0);
+        self.SetFlag(.HalfCarry, result.halfCarry);
+        if (updateCarryFlags) {
+            self.SetFlag(.Carry, result.carry);
+        }
     }
     
     pub fn DecrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
@@ -156,9 +153,11 @@ pub const Cpu = struct {
 
         // Easiest way to do this without duplicating code is to use the Increment function with the negated input and override the subtraction flag
         self.IncrementEightBitRegister(register, modifiedInput);
+
         self.SetFlag(.Subrataction, 1);
     }
 
+    // Memory Operations
     // TODO: Rquires memory for implemenation
     pub fn PopStack(self: *Cpu) u8 {
         self.SP += 8;
