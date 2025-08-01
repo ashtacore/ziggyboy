@@ -148,11 +148,11 @@ pub const Cpu = struct {
         }
     }
     
-    pub fn DecrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8) void {
+    pub fn DecrementEightBitRegister(self: *Cpu, register: EightBitRegister, value: u8, updateCarryFlags: bool) void {
         const modifiedInput = ~value + 1;
 
         // Easiest way to do this without duplicating code is to use the Increment function with the negated input and override the subtraction flag
-        self.IncrementEightBitRegister(register, modifiedInput);
+        self.IncrementEightBitRegister(register, modifiedInput, updateCarryFlags);
 
         self.SetFlag(.Subrataction, 1);
     }
