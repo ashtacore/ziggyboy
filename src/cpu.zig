@@ -15,6 +15,7 @@ pub const Cpu = struct {
     HL: u16 = 0,
     PC: u16 = 0, // Program Counter
     SP: u16 = 0, // Stack Pointer
+    IME: bool = false, // IME Flag
 
     // Register Getters / Setters
     pub fn GetFlag(self: *Cpu, flag: Flag) bool {

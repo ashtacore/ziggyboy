@@ -17,9 +17,12 @@ pub const InstructionTable: [256]Instruction = blk: {
         };
     }
 
+    //// System Commands
     table[0o00] = Instruction{ .mnemonic = "NOP", .cycles = 1, .length = 1, .instructionType = .Nop };
     table[0o20] = Instruction{ .mnemonic = "STOP", .cycles = 1, .length = 2, .instructionType = .Nop };
     table[0o166] = Instruction{ .mnemonic = "HALT", .cycles = 1, .length = 1, .instructionType = .Nop };
+    table[0o363] = Instruction{ .mnemonic = "DI", .cycles = 1, .length = 1, .instructionType = .ModifyInterupts, .source = .{ .immediateEight = 0 } };
+    table[0o363] = Instruction{ .mnemonic = "EI", .cycles = 1, .length = 1, .instructionType = .ModifyInterupts, .source = .{ .immediateEight = 1 } };
 
     //// LOAD Instructions
     // Pops
@@ -29,10 +32,10 @@ pub const InstructionTable: [256]Instruction = blk: {
     table[0o361] = Instruction{ .mnemonic = "POP AF", .cycles = 3, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .AF }, .source = .{ .sixteenBitRegister = .StackPointer} };
 
     // Pushes
-    table[0o301] = Instruction{ .mnemonic = "PUSH BC", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .BC } };
-    table[0o321] = Instruction{ .mnemonic = "PUSH DE", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .DE } };
-    table[0o341] = Instruction{ .mnemonic = "PUSH HL", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .HL } };
-    table[0o361] = Instruction{ .mnemonic = "PUSH AF", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .AF } };
+    table[0o305] = Instruction{ .mnemonic = "PUSH BC", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .BC } };
+    table[0o325] = Instruction{ .mnemonic = "PUSH DE", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .DE } };
+    table[0o345] = Instruction{ .mnemonic = "PUSH HL", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .HL } };
+    table[0o365] = Instruction{ .mnemonic = "PUSH AF", .cycles = 4, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .sixteenBitRegister = .StackPointer }, .source = .{ .sixteenBitRegister = .AF } };
 
     // Sixteen-Bit Load
     table[0o10] = Instruction{ .mnemonic = "LD [a16], SP", .cycles = 5, .length = 3, .instructionType = .Data, .operationType = .Load, .destination = .{ .immediatePointer = 0 }, .source = .{ .sixteenBitRegister = .StackPointer } };

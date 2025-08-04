@@ -18,9 +18,6 @@ pub const Instruction = struct {
 
     pub fn Execute(self: *const Instruction, cpu: *Cpu) void {
         switch (self.instructionType) {
-            .Nop => std.debug.print("No Op\n", .{}),
-            .Invalid => @panic("Unimplemented instruction"),
-            .Jump => {},
             .Data => {
                 if (self.operationType == null) {
                     @panic("Register and immediate instructions must include an operationType");
@@ -34,6 +31,10 @@ pub const Instruction = struct {
                     //else => @panic("Unimplemented operation"),
                 }
             },
+            .Jump => {},
+            .Nop => std.debug.print("No Op\n", .{}),
+            .ModifyInterupts => self.UpdateIMEFlag(cpu),
+            .Invalid => @panic("Unimplemented instruction"),
         }
 
         cpu.IncrementSixteenBitRegister(.ProgramCounter, self.cycles, false);
@@ -227,9 +228,18 @@ pub const Instruction = struct {
             else => @panic("Pop operation requires sixteen-bit destination")
         }
     }
+    
+    fn UpdateIMEFlag(self: *const Instruction, cpu: *Cpu) void {
+        const sourceValue = switch (self.source.?) {
+            .immediateEight => | boolAsInt| boolAsInt == 1 ,
+            else => @panic("Invalid IME operation"),
+        };
+
+        cpu.IME = sourceValue;
+    }
 };
 
-const InstructionType = enum { Data, Jump, Nop, Invalid };
+const InstructionType = enum { Data, Jump, ModifyInterupts, Nop, Invalid };
 const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, Pop, Push };
 
 pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediatePointer: u16 };
