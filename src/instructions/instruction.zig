@@ -6,6 +6,16 @@ const Flag = cpuLib.Flag;
 const EightBitRegister = cpuLib.EightBitRegister;
 const SixteenBitRegister = cpuLib.SixteenBitRegister;
 
+const InstructionType = enum { Data, Jump, ModifyInterupts, Nop, Invalid };
+const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, Pop, Push };
+
+pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediatePointer: u16 };
+pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediateEight: u8, immediateSixteen: u16 };
+
+pub const Operation = struct {
+    
+};
+
 pub const Instruction = struct {
     mnemonic: []const u8,
     cycles: u3,
@@ -28,7 +38,6 @@ pub const Instruction = struct {
                     .Load => self.Load(cpu),
                     .Pop => self.Pop(cpu),
                     .Push => self.Push(cpu),
-                    //else => @panic("Unimplemented operation"),
                 }
             },
             .Jump => {},
@@ -144,6 +153,7 @@ pub const Instruction = struct {
                     .eightBitRegister => |sourceRegister| cpu.GetEightBitRegister(sourceRegister),
                     .pointerRegister => |sourceRegister| cpu.LoadFromMemoryAddress(cpu.GetSixteenBitRegister(sourceRegister)),
                     .immediateEight => if (self.length == 2) cpu.PopStack() else @panic("Invalid eight-bit immediate load operation"),
+                    .immediateSixteen => if (self.length == 3) cpu.LoadFromMemoryAddress(cpu.PopStackTwice()) else @panic("Invalid eight-bit immediate load operation"),
                     else => @panic("Invalid eight-bit load operation"),
                 };
 
@@ -194,11 +204,22 @@ pub const Instruction = struct {
                         const upperBits: u8 = @truncate(stackPointerValue & 0x00FF);
                         const lowerBits: u8 = @truncate(stackPointerValue >> 8);
                         cpu.SaveToMemoryAddress(destinationPointer, upperBits);
-                        cpu.SaveToMemoryAddress(destinationPointer, lowerBits);
+                        cpu.SaveToMemoryAddress(destinationPointer + 1, lowerBits);
+                    },
+                    .eightBitRegister => |sourceRegister| {
+                        const registerValue = cpu.GetEightBitRegister(sourceRegister);
+                        cpu.SaveToMemoryAddress(destinationPointer, registerValue);
                     },
                     else => @panic("Invalid immediate pointer load operation"),
                 }
             }
+        }
+        
+        // Special handling for HL+/- load comands
+        if (std.mem.indexOf(u8, self.mnemonic, "HL+") != null) {
+            cpu.IncrementSixteenBitRegister(.HL, 1, false);
+        } else if (std.mem.indexOf(u8, self.mnemonic, "HL-") != null) {
+            cpu.DecrementSixteenBitRegister(.HL, 1, false);
         }
     }
     
@@ -238,9 +259,3 @@ pub const Instruction = struct {
         cpu.IME = sourceValue;
     }
 };
-
-const InstructionType = enum { Data, Jump, ModifyInterupts, Nop, Invalid };
-const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, Pop, Push };
-
-pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediatePointer: u16 };
-pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediateEight: u8, immediateSixteen: u16 };
