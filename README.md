@@ -56,12 +56,15 @@ zig build test-instructions --summary all
 
 ```
 ├── src/
-│   ├── main.zig          # Main entry point
-│   ├── cpu.zig           # CPU implementation
-│   └── instructions.zig  # Instruction definitions and execution
-├── build.zig             # Build configuration
-├── build.zig.zon         # Package configuration
-└── LICENSE               # MIT License
+│   ├── main.zig                    # Main entry point
+│   ├── cpu.zig                     # CPU implementation
+│   ├── library.zig                 # Helper functions
+│   └── instructions/
+│       ├── instruction.zig         # Instruction structure and types
+│       └── instruction_table.zig   # Instruction lookup table
+├── build.zig                       # Build configuration
+├── build.zig.zon                   # Package configuration
+└── LICENSE                         # MIT License
 ```
 
 ## Development Status
@@ -74,4 +77,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributing
 
-I'm trying to learn Zig and Gameboy emulation on my own, so no PRs please. But feel free to fork or to use this code to learn for yourself!
+I'm trying to learn Zig and Game Boy emulation on my own, so no PRs please. But feel free to fork or to use this code to learn for yourself!
