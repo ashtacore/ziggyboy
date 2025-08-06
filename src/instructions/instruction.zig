@@ -7,7 +7,7 @@ const EightBitRegister = cpuLib.EightBitRegister;
 const SixteenBitRegister = cpuLib.SixteenBitRegister;
 
 const InstructionType = enum { Data, Jump, ModifyInterupts, Nop, Invalid };
-const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, Pop, Push };
+const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, LoadHigh, Pop, Push };
 
 pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediatePointer: u16 };
 pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediateEight: u8, immediateSixteen: u16 };
@@ -36,6 +36,7 @@ pub const Instruction = struct {
                 switch (self.operationType.?) {
                     .Adc, .Add, .Cp, .Dec, .Inc, .Sbc, .Sub, .And, .Xor, .Or => self.Arithmetic(cpu),
                     .Load => self.Load(cpu),
+                    .LoadHigh => self.LoadHigh(cpu),
                     .Pop => self.Pop(cpu),
                     .Push => self.Push(cpu),
                 }
@@ -220,6 +221,54 @@ pub const Instruction = struct {
             cpu.IncrementSixteenBitRegister(.HL, 1, false);
         } else if (std.mem.indexOf(u8, self.mnemonic, "HL-") != null) {
             cpu.DecrementSixteenBitRegister(.HL, 1, false);
+        }
+    }
+    
+    fn LoadHigh(self: *const Instruction, cpu: *Cpu) void {
+        if (self.destination == null) {
+            @panic("Load operations require destination register");
+        }
+        if (self.source == null) {
+            @panic("Load operations require source");
+        }
+
+        const sourceValue = sv: {
+            break :sv switch (self.source.?) {
+                .eightBitRegister => |sourceRegister| switch (sourceRegister) {
+                    .A => cpu.GetEightBitRegister(sourceRegister),
+                    .C => cpu.LoadFromMemoryAddress(
+                        library.combineEightBitValues(0xFF, cpu.GetEightBitRegister(sourceRegister))
+                    ),
+                    else => @panic("Invalid register source in load high operation"),
+                },
+                .immediateEight => {
+                    if (self.length != 2) {
+                        @panic("Invalid immediate source in load high operation");
+                    }
+                    const pointerAddress = library.combineEightBitValues(0xFF, cpu.PopStack());
+                    break :sv cpu.LoadFromMemoryAddress(pointerAddress);
+                },
+                else => @panic("Invalid eight-bit load operation"),
+            };
+        };
+
+        switch (self.destination.?) {
+            .immediatePointer => {
+                const destinationPointer = if (self.length == 2) library.combineEightBitValues(0xFF, cpu.PopStack()) 
+                                                 else @panic("Invalid immediate pointer load high operation");
+                cpu.SaveToMemoryAddress(destinationPointer, sourceValue);
+            },
+            .eightBitRegister => |destinationPointer| {
+                switch (destinationPointer) {
+                    .A => cpu.SetEightBitRegister(destinationPointer, sourceValue),
+                    .C => {
+                        const pointerAddress = library.combineEightBitValues(0xFF, cpu.GetEightBitRegister(destinationPointer));
+                        cpu.SaveToMemoryAddress(pointerAddress, sourceValue);
+                    },
+                    else => @panic("Invalid register source in load high operation"),
+                }
+            },
+            else => @panic("Invalid load high operation"),
         }
     }
     

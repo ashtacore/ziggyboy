@@ -255,6 +255,12 @@ pub const InstructionTable: [256]Instruction = blk: {
     table[0o366] = Instruction{ .mnemonic = "OR A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Or, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
     table[0o376] = Instruction{ .mnemonic = "CP A, n8", .cycles = 2, .length = 2, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
     
+    // Load High
+    table[0o340] = Instruction{ .mnemonic = "LDH [a8], A", .cycles = 3, .length = 2, .instructionType = .Data, .operationType = .Cp, .destination = .{ .immediatePointer = 0 }, .source = .{ .eightBitRegister = .A } };
+    table[0o342] = Instruction{ .mnemonic = "LDH [C], A", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .A } };
+    table[0o360] = Instruction{ .mnemonic = "LDH A, [a8]", .cycles = 3, .length = 2, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o362] = Instruction{ .mnemonic = "LDH A [C]", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .Cp, .destination = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+
     break :blk table;
 };
 
