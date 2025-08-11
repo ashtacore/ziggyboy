@@ -7,7 +7,8 @@ const EightBitRegister = cpuLib.EightBitRegister;
 const SixteenBitRegister = cpuLib.SixteenBitRegister;
 
 const InstructionType = enum { Data, Jump, ModifyInterupts, Nop, Invalid };
-const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, LoadHigh, Pop, Push };
+const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Load, LoadHigh, Pop, Push, 
+    RotateLeft, RotateRight, ShiftLeftArith, ShiftRightArith, ShiftRighLogical, Swap, BitTest, BitReset, BitSet};
 
 pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediatePointer: u16 };
 pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediateEight: u8, immediateSixteen: u16 };

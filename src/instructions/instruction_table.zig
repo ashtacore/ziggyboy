@@ -141,6 +141,12 @@ pub const InstructionTable: [256]Instruction = blk: {
     table[0o176] = Instruction{ .mnemonic = "LD A,[HL]", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .Load, .destination = .{ .eightBitRegister = .A }, .source = .{ .pointerRegister = .HL } };
     table[0o177] = Instruction{ .mnemonic = "LD A, A", .cycles = 1, .length = 1, .instructionType = .Nop };
 
+    // Load High
+    table[0o340] = Instruction{ .mnemonic = "LDH [a8], A", .cycles = 3, .length = 2, .instructionType = .Data, .operationType = .LoadHigh, .destination = .{ .immediatePointer = 0 }, .source = .{ .eightBitRegister = .A } };
+    table[0o342] = Instruction{ .mnemonic = "LDH [C], A", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .LoadHigh, .destination = .{ .eightBitRegister = .C }, .source = .{ .eightBitRegister = .A } };
+    table[0o360] = Instruction{ .mnemonic = "LDH A, [a8]", .cycles = 3, .length = 2, .instructionType = .Data, .operationType = .LoadHigh, .destination = .{ .eightBitRegister = .A }, .source = .{ .immediateEight = 0 } };
+    table[0o362] = Instruction{ .mnemonic = "LDH A [C]", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .LoadHigh, .destination = .{ .eightBitRegister = .A }, .source = .{ .eightBitRegister = .C } };
+
     //// Arithmetic Instructions
     table[0o11] = Instruction{ .mnemonic = "ADD HL, BC", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .Add, .destination = .{ .sixteenBitRegister = .HL }, .source = .{ .sixteenBitRegister = .BC } };
     table[0o31] = Instruction{ .mnemonic = "ADD HL, DE", .cycles = 2, .length = 1, .instructionType = .Data, .operationType = .Add, .destination = .{ .sixteenBitRegister = .HL }, .source = .{ .sixteenBitRegister = .DE } };
