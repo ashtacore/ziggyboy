@@ -13,10 +13,6 @@ const OperationType = enum { Adc, Add, Cp, Dec, Inc, Sbc, Sub, And, Xor, Or, Loa
 pub const Destination = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediatePointer: u16 };
 pub const Source = union(enum) { eightBitRegister: EightBitRegister, sixteenBitRegister: SixteenBitRegister, pointerRegister: SixteenBitRegister, immediateEight: u8, immediateSixteen: u16 };
 
-pub const Operation = struct {
-    
-};
-
 pub const Instruction = struct {
     mnemonic: []const u8,
     cycles: u3,
@@ -40,6 +36,7 @@ pub const Instruction = struct {
                     .LoadHigh => self.LoadHigh(cpu),
                     .Pop => self.Pop(cpu),
                     .Push => self.Push(cpu),
+                    .BitTest, .BitReset, .BitSet => self.BitFlagOperation(cpu)
                 }
             },
             .Jump => {},
@@ -217,7 +214,7 @@ pub const Instruction = struct {
             }
         }
         
-        // Special handling for HL+/- load comands
+        // Special handling for HL+/- load commands
         if (std.mem.indexOf(u8, self.mnemonic, "HL+") != null) {
             cpu.IncrementSixteenBitRegister(.HL, 1, false);
         } else if (std.mem.indexOf(u8, self.mnemonic, "HL-") != null) {
@@ -297,6 +294,50 @@ pub const Instruction = struct {
                 cpu.PushStack(lowBits);
             },
             else => @panic("Pop operation requires sixteen-bit destination")
+        }
+    }
+    
+    fn BitFlagOperation(self: *const Instruction, cpu: *Cpu) void {
+        const targetBit = switch (self.source.?) {
+            .immediateEight => |source| if (source > std.math.maxInt(u3)) @panic("Invalid target bit for bit flag operation") else source,
+            else => @panic("Invalid bit flag operation"),
+        };
+
+        const bitMask = std.math.pow(u8, 2, targetBit);
+        
+        const destinationValue = switch (self.destination.?) {
+            .eightBitRegister => |destinationRegister| cpu.GetEightBitRegister(destinationRegister),
+            .pointerRegister => |pointerRegister| cpu.LoadFromMemoryAddress(cpu.GetSixteenBitRegister(pointerRegister)),
+            else => @panic("Invalid bit flag operation"),
+        };
+        
+        switch (self.operationType.?) {
+            .BitTest => {
+                const checkValue = destinationValue & bitMask;
+                cpu.SetFlag(.Zero, checkValue > 0);
+                cpu.SetFlag(.Subrataction, 0);
+                cpu.SetFlag(.HalfCarry, 1);
+            },
+            .BitReset => {
+                const checkValue = destinationValue & bitMask;
+                if (checkValue > 0) {
+                    const resetValue = destinationValue ^ bitMask;
+                    switch (self.destination.?) {
+                        .eightBitRegister => |destinationRegister| cpu.SetEightBitRegister(destinationRegister, resetValue),
+                        .pointerRegister => |pointerRegister| cpu.SaveToMemoryAddress(cpu.GetSixteenBitRegister(pointerRegister), resetValue),
+                        else => @panic("Invalid bit flag operation"),
+                    }
+                }
+            },
+            .BitSet => {
+                const setValue = destinationValue | bitMask;
+                switch (self.destination.?) {
+                    .eightBitRegister => |destinationRegister| cpu.SetEightBitRegister(destinationRegister, setValue),
+                    .pointerRegister => |pointerRegister| cpu.SaveToMemoryAddress(cpu.GetSixteenBitRegister(pointerRegister), setValue),
+                    else => @panic("Invalid bit flag operation"),
+                }
+            },
+            else => @panic("Invalid Bit Flag operation"),
         }
     }
     
